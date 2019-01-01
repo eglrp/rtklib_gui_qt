@@ -1,0 +1,10 @@
+﻿  Generate moc_predefs.h
+  Moc'ing launchmain.h...
+  Rcc'ing rtklaunch_qt.qrc...
+  Uic'ing launchmain.ui...
+  launchmain.cpp
+  main.cpp
+  moc_launchmain.cpp
+  qrc_rtklaunch_qt.cpp
+e:\qt\qt5.11.1\5.11.1\msvc2017_64\include\qtcore\qsharedpointer_impl.h(667): warning C4003: not enough arguments for function-like macro invocation 'lock' (compiling source file launchmain.cpp)
+  rtklaunch_qt.vcxproj -> E:\GNSS\RTKLIB\RTKLIB_243_gui_qt\app\rtklaunch_qt\debug\rtklaunch_qt.exe

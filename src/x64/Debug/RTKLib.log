@@ -1,0 +1,399 @@
+﻿  binex.c
+  cmr.c
+  convgpx.c
+  convkml.c
+  convrnx.c
+  crescent.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(142): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(142): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(142): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(148): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(148): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(148): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(154): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(154): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(154): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(160): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(160): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(160): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(166): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(166): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(166): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(172): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(172): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(172): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(178): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(178): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(178): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(184): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(184): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(184): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(190): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(190): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(190): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(196): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(196): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(196): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(202): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(202): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(202): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(208): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(208): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(208): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(214): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(214): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(214): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(220): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(220): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(220): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(226): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(226): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(226): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(232): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(232): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(232): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(238): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(238): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(238): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(244): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(244): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(244): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(250): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\cmr.c(2103): warning C4267: '-=': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(250): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(250): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(256): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(256): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(256): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(262): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(262): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(262): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(268): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(268): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(268): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(274): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(274): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(274): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(280): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(280): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(280): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(286): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(286): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(286): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(292): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\cmr.c(2439): warning C4244: '=': conversion from 'double' to 'time_t', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(292): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(292): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(298): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(298): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(298): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\cmr.c(2556): warning C4244: '=': conversion from 'double' to 'unsigned char', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(304): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\cmr.c(2557): warning C4244: '=': conversion from 'double' to 'unsigned char', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(304): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(304): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(310): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(310): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(310): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(316): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(316): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(316): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(322): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(322): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(322): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(328): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(328): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(328): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(334): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(334): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(334): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(340): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(340): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(340): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(346): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(346): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(346): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(352): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(352): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(352): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(417): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(417): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(417): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(819): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(819): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(819): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(825): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(825): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(825): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(831): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(831): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(831): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(837): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(837): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(837): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(843): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(843): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(843): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(849): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(849): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(849): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(855): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(855): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(855): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(861): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(861): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(861): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(867): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(867): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(867): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(1019): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\binex.c(1044): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\convkml.c(36): warning C4100: 'outtime': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\convrnx.c(890): warning C4100: 'opt': unreferenced formal parameter
+  datum.c
+  download.c
+  ephemeris.c
+  geoid.c
+  gis.c
+  gw10.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\download.c(320): warning C4101: 'stat': unreferenced local variable
+e:\gnss\rtklib\rtklib_243_gui_qt\src\download.c(362): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\download.c(503): warning C4101: 'remot_p': unreferenced local variable
+e:\gnss\rtklib\rtklib_243_gui_qt\src\download.c(774): warning C4101: 'tow': unreferenced local variable
+e:\gnss\rtklib\rtklib_243_gui_qt\src\gis.c(312): warning C4101: 'q': unreferenced local variable
+  ionex.c
+  javad.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\geoid.c(136): warning C4100: 'nlat': unreferenced formal parameter
+  lambda.c
+  novatel.c
+  nvs.c
+  options.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(426): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(433): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(440): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(447): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(454): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(461): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(468): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(804): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(811): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(818): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(825): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(852): warning C4100: 'len': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(914): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(941): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(968): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(968): warning C4100: 'buff': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(1044): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(1108): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(1115): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\javad.c(1122): warning C4100: 'raw': unreferenced formal parameter
+  pntpos.c
+  postpos.c
+  ppp.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\nvs.c(105): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\nvs.c(267): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\nvs.c(249): warning C4100: 'sat': unreferenced formal parameter
+  ppp_ar.c
+  ppp_corr.c
+  preceph.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\pntpos.c(174): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\pntpos.c(495): warning C4100: 'opt': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\postpos.c(819): warning C4100: 'sta': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\postpos.c(862): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\postpos.c(861): warning C4100: 'popt': unreferenced formal parameter
+  qzslex.c
+  rcvlex.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp.c(237): warning C4100: 'opt': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp.c(237): warning C4100: 'type': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp.c(237): warning C4100: 'sat': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp.c(321): warning C4100: 'sat': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp.c(891): warning C4100: 'azel': unreferenced formal parameter
+  rcvraw.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_ar.c(18): warning C4100: 'P': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_ar.c(18): warning C4100: 'x': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_ar.c(18): warning C4100: 'azel': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_ar.c(18): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_ar.c(17): warning C4100: 'exc': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_ar.c(17): warning C4100: 'n': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_ar.c(17): warning C4100: 'obs': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_ar.c(17): warning C4100: 'rtk': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(24): warning C4100: 'file': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(24): warning C4100: 'corr': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(33): warning C4100: 'corr': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(46): warning C4100: 'std': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(46): warning C4100: 'trp': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(45): warning C4100: 'pos': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(45): warning C4100: 'time': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(45): warning C4100: 'corr': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(61): warning C4100: 'std': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(61): warning C4100: 'ion': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(60): warning C4100: 'pos': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(60): warning C4100: 'time': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\ppp_corr.c(60): warning C4100: 'corr': unreferenced formal parameter
+  rinex.c
+  rt17.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\preceph.c(119): warning C4100: 'sats': unreferenced formal parameter
+  rtcm.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\qzslex.c(375): warning C4100: 'tof': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\qzslex.c(375): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\qzslex.c(375): warning C4100: 'msg': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rcvlex.c(148): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  rtcm2.c
+  rtcm3.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcvraw.c(737): warning C4100: 'leaps': unreferenced formal parameter
+  rtcm3e.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rinex.c(884): warning C4100: 'ver': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rinex.c(2419): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rinex.c(2511): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rinex.c(2598): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rinex.c(2626): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rinex.c(2654): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rinex.c(2682): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rt17.c(808): warning C4100: 'Raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rt17.c(940): warning C4100: 'Raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rt17.c(1045): warning C4100: 'Raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rt17.c(1417): warning C4100: 'Raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rt17.c(1781): warning C4244: '=': conversion from 'double' to 'unsigned char', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rt17.c(1794): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rt17.c(1804): warning C4244: '=': conversion from 'double' to 'unsigned char', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\rt17.c(1830): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  rtkcmn.c
+  rtkpos.c
+  rtksvr.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm2.c(330): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm2.c(335): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm2.c(340): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm2.c(345): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm2.c(350): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm2.c(355): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm2.c(360): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm2.c(365): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(669): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(811): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(817): warning C4100: 'rtcm': unreferenced formal parameter
+  sbas.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(823): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(829): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(835): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(841): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(847): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(885): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(891): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(897): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(959): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(965): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(971): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(977): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(983): warning C4100: 'rtcm': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3.c(2225): warning C4100: 'rtcm': unreferenced formal parameter
+  septentrio.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(546): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(566): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(567): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(899): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(900): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(901): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(902): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(903): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(1795): warning C4100: 'nsat': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtcm3e.c(1827): warning C4100: 'nsat': unreferenced formal parameter
+  skytraq.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkcmn.c(3527): warning C4100: 'time': unreferenced formal parameter
+  solution.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(98): warning C4100: 'azel': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(97): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(97): warning C4100: 'ns': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(97): warning C4100: 'ir': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(97): warning C4100: 'iu': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(96): warning C4100: 'sat': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(96): warning C4100: 'obs': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(96): warning C4100: 'rtk': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(101): warning C4100: 'azel': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(100): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(100): warning C4100: 'ns': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(100): warning C4100: 'ir': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(100): warning C4100: 'iu': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(99): warning C4100: 'sat': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(99): warning C4100: 'obs': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(99): warning C4100: 'rtk': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(397): warning C4100: 'sat': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(573): warning C4100: 'bl': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(714): warning C4100: 'nav': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(713): warning C4100: 'rcv': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(713): warning C4100: 'i': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(713): warning C4100: 'obs': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(713): warning C4100: 'rtk': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(1076): warning C4100: 'sat2': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(1076): warning C4100: 'sat1': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtkpos.c(1372): warning C4100: 'nb': unreferenced formal parameter
+  ss2.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtksvr.c(561): warning C4244: 'function': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtksvr.c(1128): warning C4244: 'function': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtksvr.c(1129): warning C4244: 'function': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rtksvr.c(1136): warning C4244: 'function': conversion from '__int64' to 'int', possible loss of data
+  stream.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\septentrio.c(369): warning C4244: '=': conversion from 'int16_t' to 'unsigned char', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\septentrio.c(406): warning C4244: '=': conversion from 'int16_t' to 'unsigned char', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\septentrio.c(414): warning C4244: '=': conversion from 'uint16_t' to 'unsigned char', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\sbas.c(605): warning C4100: 'time': unreferenced formal parameter
+  streamsvr.c
+  tersus.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\skytraq.c(197): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\skytraq.c(319): warning C4244: '=': conversion from 'unsigned short' to 'unsigned char', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\skytraq.c(326): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  tides.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(558): warning C4100: 'opt': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1130): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1173): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1195): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1211): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1236): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1252): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1269): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1285): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1346): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1362): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1440): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1513): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1580): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1643): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\solution.c(1674): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+  tle.c
+  ublox.c
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(489): warning C4100: 'msg': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(513): warning C4100: 'msg': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(545): warning C4311: 'type cast': pointer truncation from 'HANDLE' to 'int'
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(679): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(826): warning C4267: '=': conversion from 'size_t' to 'long', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(771): warning C4101: 'rs': unreferenced local variable
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(770): warning C4189: 'tv': local variable is initialized but not referenced
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(988): warning C4244: 'function': conversion from 'SOCKET' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1030): warning C4244: 'function': conversion from 'SOCKET' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1043): warning C4244: 'function': conversion from 'SOCKET' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1454): warning C4100: 'msg': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\streamsvr.c(279): warning C4100: 'time': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1490): warning C4244: 'function': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1514): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1519): warning C4244: 'function': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1539): warning C4244: '-=': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1580): warning C4244: '-=': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1838): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1845): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1896): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1901): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1907): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1940): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1947): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1954): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1962): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(1968): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(2198): warning C4244: 'function': conversion from 'SOCKET' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(2189): warning C4100: 'msg': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(2248): warning C4100: 'msg': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(2524): warning C4100: 'msg': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(2564): warning C4100: 'msg': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\rcv\tersus.c(576): warning C4100: 'raw': unreferenced formal parameter
+e:\gnss\rtklib\rtklib_243_gui_qt\src\stream.c(3141): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
+e:\gnss\rtklib\rtklib_243_gui_qt\src\tle.c(275): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  RTKLib.vcxproj -> E:\GNSS\RTKLIB\RTKLIB_243_gui_qt\src\debug\RTKLib.lib
