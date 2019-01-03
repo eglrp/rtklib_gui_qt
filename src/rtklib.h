@@ -256,7 +256,7 @@ extern "C" {
 #define MAXERRMSG   4096                /* max length of error/warning message */
 #define MAXANT      64                  /* max length of station name/antenna type */
 #define MAXSOLBUF   256                 /* max number of solution buffer */
-#define MAXOBSBUF   128                 /* max number of observation data buffer */
+#define MAXOBSBUF   128                 /* max number of observation data buffer: usually the number is in term of epoch */
 #define MAXNRPOS    16                  /* max number of reference positions */
 #define MAXLEAPS    64                  /* max number of leap seconds table */
 #define MAXGISLAYER 32                  /* max number of GIS data layers */
@@ -1056,8 +1056,8 @@ typedef struct {        /* processing options type */
     int intpref;        /* interpolate reference obs (for post mission) */
     int sbascorr;       /* SBAS correction options */
     int sbassatsel;     /* SBAS satellite selection (0:all) */
-    int rovpos;         /* rover position for fixed mode */
-    int refpos;         /* base position for relative mode */
+    int rovpos;         /* rover position for fixed mode £ºpos type flag for ru*/
+    int refpos;         /* base position for relative mode : pos type flag for rb*/
                         /* (0:pos in prcopt,  1:average of single pos, */
                         /*  2:read from file, 3:rinex header, 4:rtcm pos) */
     double eratio[NFREQ]; /* code/phase error ratio */
@@ -1313,7 +1313,7 @@ typedef struct {        /* RTK server type */
     double nmeapos[3];  /* NMEA request position (ecef) (m) */
     int buffsize;       /* input buffer size (bytes) */
     int format[3];      /* input format {rov,base,corr} */
-    solopt_t solopt[2]; /* output solution options {sol1,sol2} */
+    solopt_t solopt[2]; /* output solution options {sol1,sol2}, [q] why two? */
     int navsel;         /* ephemeris select (0:all,1:rover,2:base,3:corr) */
     int nsbs;           /* number of sbas message */
     int nsol;           /* number of solution buffer */
@@ -1325,7 +1325,7 @@ typedef struct {        /* RTK server type */
     unsigned char *sbuf[2]; /* output buffers {sol1,sol2} */
     unsigned char *pbuf[3]; /* peek buffers {rov,base,corr}, [q] for what? */
     sol_t solbuf[MAXSOLBUF]; /* solution buffer */
-    unsigned int nmsg[3][10]; /* input message counts */
+    unsigned int nmsg[3][10]; /* input message counts,[q] why need 10? */
     raw_t  raw [3];     /* receiver raw control {rov,base,corr} */
     rtcm_t rtcm[3];     /* RTCM control {rov,base,corr} */
     gtime_t ftime[3];   /* download time {rov,base,corr} */

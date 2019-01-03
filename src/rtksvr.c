@@ -304,7 +304,10 @@ static void updatesvr(rtksvr_t *svr, int ret, obs_t *obs, nav_t *nav, int sat,
         svr->nmsg[index][9]++;
     }
 }
-/* decode receiver raw/rtcm data ---------------------------------------------*/
+/* decode receiver raw/rtcm data ,after decoding:---------------
+ * set svr->nb[i]=0
+ * updatesvr(svr,ret,obs,nav,sat,sbsmsg,index,fobs)
+ --------------------------------------------------------------*/
 static int decoderaw(rtksvr_t *svr, int index)
 {
     obs_t *obs;
@@ -316,7 +319,7 @@ static int decoderaw(rtksvr_t *svr, int index)
     
     rtksvrlock(svr);
     
-    for (i=0;i<svr->nb[index];i++) {
+    for (i=0;i<svr->nb[index];i++) { /* decode byte by byte */
         
         /* input rtcm/receiver raw data from stream */
         if (svr->format[index]==STRFMT_RTCM2) {
@@ -362,7 +365,7 @@ static int decoderaw(rtksvr_t *svr, int index)
     
     return fobs;
 }
-/* decode download file ------------------------------------------------------*/
+/* decode download file, after decoding, set svr->nb[i]=0----------------*/
 static void decodefile(rtksvr_t *svr, int index)
 {
     nav_t nav={0};
@@ -535,7 +538,7 @@ static void *rtksvrthread(void *arg)
 {
     rtksvr_t *svr=(rtksvr_t *)arg;
     obs_t obs;
-    obsd_t data[MAXOBS*2];
+    obsd_t data[MAXOBS*2]; /* 2: for both rov and ref */
     sol_t sol={{0}};
     double tt;
     unsigned int tick,ticknmea,tick1hz,tickreset;
@@ -551,11 +554,13 @@ static void *rtksvrthread(void *arg)
     ticknmea=tick1hz=svr->tick-1000;
     tickreset=svr->tick-MIN_INT_RESET;
     
-    for (cycle=0;svr->state;cycle++) {
+    for (cycle=0;svr->state;cycle++) { /* stop when svr->state==0 */
         tick=tickget();
         
-        for (i=0;i<3;i++) {
-            p=svr->buff[i]+svr->nb[i]; q=svr->buff[i]+svr->buffsize;
+        /* 1.read stream */
+        for (i=0;i<3;i++) { /* for every input stream[i] */
+            p=svr->buff[i]+svr->nb[i];    /* begin pointer */
+            q=svr->buff[i]+svr->buffsize; /* end pointer */
             
             /* read receiver raw/rtcm data from input stream */
             if ((n=strread(svr->stream+i,p,q-p))<=0) {
@@ -567,11 +572,15 @@ static void *rtksvrthread(void *arg)
             
             /* save peek buffer */
             rtksvrlock(svr);
-            n=n<svr->buffsize-svr->npb[i]?n:svr->buffsize-svr->npb[i];
-            memcpy(svr->pbuf[i]+svr->npb[i],p,n);
+            /* judge: to avoid overflow peek buff, when n > the rest size in peek buff */
+            n= n < svr->buffsize-svr->npb[i]? n:svr->buffsize-svr->npb[i];
+            memcpy(svr->pbuf[i]+svr->npb[i],p,n);/* it might lost bytes when overflow */
             svr->npb[i]+=n;
             rtksvrunlock(svr);
-        }
+            /* save peek buffer */
+        }/* 1.read stream */
+
+        /* 2.decode stream: after decoding, set svr->nb[i]=0 */
         for (i=0;i<3;i++) {
             if (svr->format[i]==STRFMT_SP3||svr->format[i]==STRFMT_RNXCLK) {
                 /* decode download file */
@@ -581,27 +590,38 @@ static void *rtksvrthread(void *arg)
                 /* decode receiver raw/rtcm data */
                 fobs[i]=decoderaw(svr,i);
             }
-        }
-        /* averaging single base pos */
-        if (fobs[1]>0&&svr->rtk.opt.refpos==POSOPT_SINGLE) {
+        }/* 2.decode stream */
+
+        /* 3.averaging single base pos */
+        if (fobs[1]>0&& /* index 1: ref station */
+            svr->rtk.opt.refpos==POSOPT_SINGLE) {
             if ((svr->rtk.opt.maxaveep<=0||svr->nave<svr->rtk.opt.maxaveep)&&
-                pntpos(svr->obs[1][0].data,svr->obs[1][0].n,&svr->nav,
+                 /* only use the first epoch for positioning */
+                 pntpos(svr->obs[1][0].data,svr->obs[1][0].n,&svr->nav,
                        &svr->rtk.opt,&sol,NULL,NULL,msg)) {
                 svr->nave++;
                 for (i=0;i<3;i++) {
+                    /* sol: solution after pntpos */
                     svr->rb_ave[i]+=(sol.rr[i]-svr->rb_ave[i])/svr->nave;
                 }
             }
             for (i=0;i<3;i++) svr->rtk.opt.rb[i]=svr->rb_ave[i];
-        }
-        for (i=0;i<fobs[0];i++) { /* for each rover observation data */
+        }/* 3.averaging single base pos */
+
+
+        for (i=0;i<fobs[0];i++) {
+            /* retrieve obs from svr->obs to temp varible obs
+             *  i:                  index for epoch
+             *  svr->obs[0][i]:     rov obs at epoch i
+             *  svr->obs[0][i]:     ref obs at epoch i       */
             obs.n=0;
             for (j=0;j<svr->obs[0][i].n&&obs.n<MAXOBS*2;j++) {
                 obs.data[obs.n++]=svr->obs[0][i].data[j];
             }
             for (j=0;j<svr->obs[1][0].n&&obs.n<MAXOBS*2;j++) {
                 obs.data[obs.n++]=svr->obs[1][0].data[j];
-            }
+            }/* retrieve obs from svr->obs to temp varible obs */
+
             /* carrier phase bias correction */
             if (!strstr(svr->rtk.opt.pppopt,"-DIS_FCB")) {
                 corr_phase_bias(obs.data,obs.n,&svr->nav);
@@ -612,7 +632,6 @@ static void *rtksvrthread(void *arg)
             rtksvrunlock(svr);
             
             if (svr->rtk.sol.stat!=SOLQ_NONE) {
-                
                 /* adjust current time */
                 tt=(int)(tickget()-tick)/1000.0+DTTOL;
                 timeset(gpst2utc(timeadd(svr->rtk.sol.time,tt)));
@@ -646,7 +665,8 @@ static void *rtksvrthread(void *arg)
         
         /* sleep until next cycle */
         sleepms(svr->cycle-cputime);
-    }
+    }/* stop when svr->state==0 */
+
     for (i=0;i<MAXSTRRTK;i++) strclose(svr->stream+i);
     for (i=0;i<3;i++) {
         svr->nb[i]=svr->npb[i]=0;
@@ -762,7 +782,7 @@ extern void rtksvrunlock(rtksvr_t *svr) {unlock(&svr->lock);}
 * args   : rtksvr_t *svr    IO rtk server
 *          int     cycle    I  server cycle (ms)
 *          int     buffsize I  input buffer size (bytes)
-*          int     *strs    I  stream types (STR_???)
+*          int     *strs    I  stream types (STR_???,e.g. STR_TCPCLI)
 *                              types[0]=input stream rover
 *                              types[1]=input stream base station
 *                              types[2]=input stream correction
@@ -836,6 +856,8 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
         svr->nave=0;
         for (i=0;i<3;i++) svr->rb_ave[i]=0.0;
     }
+
+    /* 1.stream initialization : malloc, etc. */
     for (i=0;i<3;i++) { /* input/log streams */
         svr->nb[i]=svr->npb[i]=0;
         if (!(svr->buff[i]=(unsigned char *)malloc(buffsize))||
@@ -859,7 +881,7 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
         /* connect dgps corrections */
         svr->rtcm[i].dgps=svr->nav.dgps;
     }
-    for (i=0;i<2;i++) { /* output peek buffer */
+    for (i=0;i<2;i++) { /* output buffer */
         if (!(svr->sbuf[i]=(unsigned char *)malloc(buffsize))) {
             tracet(1,"rtksvrstart: malloc error\n");
             sprintf(errmsg,"rtk server malloc error");
@@ -875,7 +897,8 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
         for (i=0;i<6;i++) {
             svr->rtk.rb[i]=i<3?prcopt->rb[i]:0.0;
         }
-    }
+    }/* stream initialization */
+
     /* update navigation data */
     for (i=0;i<MAXSAT *2;i++) svr->nav.eph [i].ttr=time0;
     for (i=0;i<NSATGLO*2;i++) svr->nav.geph[i].tof=time0;
@@ -885,7 +908,7 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
     /* set monitor stream */
     svr->moni=moni;
     
-    /* open input streams */
+    /* 2.open input/output/log streams */
     for (i=0;i<8;i++) {
         rw=i<3?STR_MODE_R:STR_MODE_W;
         if (strs[i]!=STR_FILE) rw|=STR_MODE_W;
@@ -894,30 +917,31 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
             for (i--;i>=0;i--) strclose(svr->stream+i);
             return 0;
         }
-        /* set initial time for rtcm and raw */
-        if (i<3) {
+
+        if (i<3) {/* set initial time for rtcm and raw in input stream */
             time=utc2gpst(timeget());
             svr->raw [i].time=strs[i]==STR_FILE?strgettime(svr->stream+i):time;
             svr->rtcm[i].time=strs[i]==STR_FILE?strgettime(svr->stream+i):time;
         }
     }
-    /* sync input streams */
+    /* sync input streams [optional: for sitimulate real-time process by post data] */
     strsync(svr->stream,svr->stream+1);
     strsync(svr->stream,svr->stream+2);
     
-    /* write start commands to input streams */
+    /* 3.when streams are opened successfully, write start commands to input streams */
     for (i=0;i<3;i++) {
         if (!cmds[i]) continue;
         strwrite(svr->stream+i,(unsigned char *)"",0); /* for connect */
         sleepms(100);
         strsendcmd(svr->stream+i,cmds[i]);
     }
-    /* write solution header to solution streams */
+    /* 4.write solution header to solution streams, for output stream */
     for (i=3;i<5;i++) {
         writesolhead(svr->stream+i,svr->solopt+i-3);
     }
-    /* create rtk server thread */
+    /* 5.create rtk server thread : real-time processing */
 #ifdef WIN32
+    /* see: https://www.cnblogs.com/ay-a/p/8762951.html */
     if (!(svr->thread=CreateThread(NULL,0,rtksvrthread,svr,0,NULL))) {
 #else
     if (pthread_create(&svr->thread,NULL,rtksvrthread,svr)) {

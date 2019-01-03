@@ -174,6 +174,6 @@ public:
     QString MarkerName, MarkerComment;
 };
 
-extern MainWindow *mainForm;
+extern MainWindow *mainForm; // defined in navmain.cpp, shared by its subgui
 //---------------------------------------------------------------------------
 #endif

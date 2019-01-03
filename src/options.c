@@ -27,15 +27,17 @@
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-/* system options buffer -----------------------------------------------------*/
+/* system options buffer, these three struct stored all info for system option*/
 static prcopt_t prcopt_;
 static solopt_t solopt_;
 static filopt_t filopt_;
-static int antpostype_[2];
-static double elmask_,elmaskar_,elmaskhold_;
-static double antpos_[2][3];
-static char exsats_[1024];
-static char snrmask_[NFREQ][1024];
+
+/* these variables are all mapped into the structs above*/
+static int antpostype_[2]; /* prcopt_.rovpos, prcopt_.refpos */
+static double antpos_[2][3]; /* prcopt_.ru, prcopt_.rb*/
+static double elmask_,elmaskar_,elmaskhold_; /* <--> prcopt_.elmin, prcopt_.elmaskar, prcopt_.elmaskhold */
+static char exsats_[1024]; /* <--> prcopt_.exsats */
+static char snrmask_[NFREQ][1024]; /* <--> prcopt_.snrmask.mask[i][j] */
 
 /* system options table ------------------------------------------------------*/
 #define SWTOPT  "0:off,1:on"
@@ -389,8 +391,8 @@ static void buff2sysopts(void)
     prcopt_.elmaskhold=elmaskhold_*D2R;
     
     for (i=0;i<2;i++) {
-        ps=i==0?&prcopt_.rovpos:&prcopt_.refpos;
-        rr=i==0?prcopt_.ru:prcopt_.rb;
+        ps=i==0?&prcopt_.rovpos:&prcopt_.refpos;	 /*pos type flag: enum type */
+        rr=i==0?prcopt_.ru:prcopt_.rb;				 /*pos xyz(m)*/
         
         if (antpostype_[i]==0) { /* lat/lon/hgt */
             *ps=0;
@@ -446,7 +448,7 @@ static void sysopts2buff(void)
         ps=i==0?&prcopt_.rovpos:&prcopt_.refpos;
         rr=i==0?prcopt_.ru:prcopt_.rb;
         
-        if (*ps==0) {
+        if (*ps==0) { /* unify unit : store pos info in term of degree */
             antpostype_[i]=0;
             ecef2pos(rr,pos);
             antpos_[i][0]=pos[0]*R2D;

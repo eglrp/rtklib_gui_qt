@@ -436,7 +436,7 @@ void OptDialog::OutputHeightClick()
 {
 	UpdateEnable();
 }
-//---------------------------------------------------------------------------
+//showEvent------------------------------------------------------------------
 void OptDialog::GetOpt(void)
 {
     QLineEdit *editu[]={RovPos1,RovPos2,RovPos3};
@@ -560,7 +560,7 @@ void OptDialog::GetOpt(void)
 
 	UpdateEnable();
 }
-//---------------------------------------------------------------------------
+//BtnOkClick---------------------------------------------------------------------
 void OptDialog::SetOpt(void)
 {
     QString FieldSep_Text=FieldSep->text();
@@ -683,7 +683,9 @@ void OptDialog::SetOpt(void)
 
 	UpdateEnable();
 }
-//---------------------------------------------------------------------------
+/*load options from optionfile to corresponding controls in gui---------------------------
+    then the options info stored in gui will pass to background variables in BtnOkClick
+----------------------------------------------------------------------------------------*/
 void OptDialog::LoadOpt(const QString &file)
 {
     int itype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_FILE,STR_FTP,STR_HTTP};
@@ -700,15 +702,15 @@ void OptDialog::LoadOpt(const QString &file)
     memset(&filopt,0,sizeof(filopt_t));
 	
 	resetsysopts();
-    if (!loadopts(qPrintable(file),sysopts)||
-        !loadopts(qPrintable(file),rcvopts)) return;
+    if (!loadopts(qPrintable(file),sysopts)||!loadopts(qPrintable(file),rcvopts))
+        return;
 	getsysopts(&prcopt,&solopt,&filopt);
 	
 	for (int i=0;i<8;i++) {
         mainForm->StreamC[i]=strtype[i]!=STR_NONE;
         mainForm->Stream[i]=STR_NONE;
 		for (int j=0;j<(i<3?7:5);j++) {
-			if (strtype[i]!=(i<3?itype[j]:otype[j])) continue;
+            if (strtype[i]!=(i<3?itype[j]:otype[j])) continue;
             mainForm->Stream[i]=j;
 			break;
 		}
@@ -756,11 +758,11 @@ void OptDialog::LoadOpt(const QString &file)
     NavSys5	     ->setChecked(prcopt.navsys&SYS_SBS);
     NavSys6	     ->setChecked(prcopt.navsys&SYS_CMP);
     NavSys7	     ->setChecked(prcopt.navsys&SYS_IRN);
-    PosOpt1		 ->setChecked(prcopt.posopt[0]);
+    PosOpt1		 ->setChecked(prcopt.posopt[0]); /*Sat PCV*/
     PosOpt2		 ->setChecked(prcopt.posopt[1]);
     PosOpt3		 ->setChecked(prcopt.posopt[2]);
     PosOpt4		 ->setChecked(prcopt.posopt[3]);
-    PosOpt5		 ->setChecked(prcopt.posopt[4]);
+    PosOpt5		 ->setChecked(prcopt.posopt[4]); /*RAIM FDE*/
 	
     AmbRes		 ->setCurrentIndex(prcopt.modear);
     GloAmbRes	 ->setCurrentIndex(prcopt.glomodear);
@@ -809,7 +811,7 @@ void OptDialog::LoadOpt(const QString &file)
     PrNoise4	 ->setText(QString::number(prcopt.prn[3],'E',2));
     PrNoise5	 ->setText(QString::number(prcopt.prn[4],'E',2));
 	
-    RovAntPcv	 ->setChecked(*prcopt.anttype[0]);
+    RovAntPcv	 ->setChecked(*prcopt.anttype[0]);/* if string anttype[i]!='\0', then it means RovAntPcv is checked */
     RefAntPcv	 ->setChecked(*prcopt.anttype[1]);
     RovAnt		 ->setCurrentIndex(RovAnt->findText(prcopt.anttype[0]));
     RefAnt		 ->setCurrentIndex(RefAnt->findText(prcopt.anttype[1]));
@@ -1124,7 +1126,8 @@ void OptDialog::GetPos(int type, QLineEdit **edit, double *pos)
 		pos2ecef(p,pos);
 	}
 }
-//---------------------------------------------------------------------------
+// convert pos to the format specified by gui----------------------
+//pos{x,y,z}(m)
 void OptDialog::SetPos(int type, QLineEdit **edit, double *pos)
 {
     double p[3],dms1[3],dms2[3],s1,s2;
@@ -1152,7 +1155,7 @@ void OptDialog::SetPos(int type, QLineEdit **edit, double *pos)
         edit[2]->setText(QString::number(p[2],'f',4));
 	}
 }
-//---------------------------------------------------------------------------
+//RovAnt\RovAnt load ant items from antfile, which only effects gui--------
 void OptDialog::ReadAntList(void)
 {
     QString AntPcvFile_Text=AntPcvFile->text();
