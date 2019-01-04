@@ -520,11 +520,11 @@ static void estvel(const obsd_t *obs, int n, const double *rs, const double *dts
     }
     free(v); free(H);
 }
-/* single-point positioning ----------------------------------------------------
+/* single-point positioning at one epoch ---------------------------------------
 * compute receiver position, velocity, clock bias by single-point positioning
 * with pseudorange and doppler observables
-* args   : obsd_t *obs      I   observation data
-*          int    n         I   number of observation data
+* args   : obsd_t *obs      I   observation data, at one epoch
+*          int    n         I   number of observation data, i.e. this epoch has n obs
 *          nav_t  *nav      I   navigation data
 *          prcopt_t *opt    I   processing options
 *          sol_t  *sol      IO  solution
@@ -540,8 +540,8 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
                   const prcopt_t *opt, sol_t *sol, double *azel, ssat_t *ssat,
                   char *msg)
 {
-    prcopt_t opt_=*opt;
-    double *rs,*dts,*var,*azel_,*resp;
+    prcopt_t opt_=*opt; /* a copy of opt */
+    double *rs,*dts,*var,*azel_,*resp; /* variable meaning see: satposs() definition */
     int i,stat,vsat[MAXOBS]={0},svh[MAXOBS];
     
     sol->stat=SOLQ_NONE;
@@ -554,7 +554,7 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     
     rs=mat(6,n);
 	dts=mat(2,n); /* only glonass, other_sys-gps can be neglected */
-	var=mat(1,n);
+    var=mat(1,n); /* sigma_0 */
 	azel_=zeros(2,n);
 	resp=mat(1,n); /* residual of pesudorange */
     

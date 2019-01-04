@@ -227,6 +227,9 @@ extern "C" {
 #else
 #define DTTOL       0.025               /* tolerance of time difference (s) */
 #endif
+/* toe: time of ephemirs£¬at which eph parameters describe sat orbits--------------------------
+* note that: eph paras have no concept of signal time of transmission and reception
+*            however, observations, i.e. ranging signal, have.-------------------------------*/
 #define MAXDTOE     7200.0              /* max time difference to GPS Toe (s) */
 #define MAXDTOE_QZS 7200.0              /* max time difference to QZSS Toe (s) */
 #define MAXDTOE_GAL 14400.0             /* max time difference to Galileo Toe (s) */
@@ -234,6 +237,7 @@ extern "C" {
 #define MAXDTOE_GLO 1800.0              /* max time difference to GLONASS Toe (s) */
 #define MAXDTOE_SBS 360.0               /* max time difference to SBAS Toe (s) */
 #define MAXDTOE_S   86400.0             /* max time difference to ephem toe (s) for other */
+
 #define MAXGDOP     300.0               /* max GDOP */
 
 #define INT_SWAP_TRAC 86400.0           /* swap interval of trace file (s) */
