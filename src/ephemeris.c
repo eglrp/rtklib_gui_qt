@@ -271,10 +271,10 @@ extern void eph2pos(gtime_t time, const eph_t *eph, double *rs, double *dts,
     tk=timediff(time,eph->toc);
     *dts=eph->f0+eph->f1*tk+eph->f2*tk*tk;
     
-    /* relativity correction */
+    /* 3.relativity correction */
     *dts-=2.0*sqrt(mu*eph->A)*eph->e*sinE/SQR(CLIGHT);
     
-    /* 3.position and clock error variance */
+    /* 4.position and clock error variance */
     *var=var_uraeph(sys,eph->sva);
 }
 /* glonass orbit differential equations --------------------------------------*/
@@ -728,7 +728,7 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
 *          double *rs       O   sat position and velocity (ecef)
 *                               {x,y,z,vx,vy,vz} (m|m/s)
 *          double *dts      O   sat clock {bias,drift} (s|s/s)
-*          double *var      O   sat position and clock error variance (m^2)
+*          double *var      O   sat position and clock error variance (m^2), *var=vare+varc
 *          int    *svh      O   sat health flag (-1:correction not available)
 * return : status (1:ok,0:error)
 * notes  : satellite position is referenced to antenna phase center
@@ -827,7 +827,7 @@ extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
             if (!ephclk(time[i],teph,obs[i].sat,nav,dts+i*2)) continue;
             dts[1+i*2]=0.0; /* no clk drift will output, due to low precision of brd eph clk,
                              * the way, drift=(dtss-dtst)/(tss-tst), do not apply to this case any more */
-            *var=SQR(STD_BRDCCLK);
+            *var=SQR(STD_BRDCCLK); /* [bug] var[i]=SQR(STD_BRDCCLK);???? */
         }
     }
     /* trace output computation result: sat pos, clk, var, svh */

@@ -1800,8 +1800,8 @@ extern void xyz2enu(const double *pos, double *E)
 }
 /* transform ecef vector to local tangental coordinate -------------------------
 * transform ecef vector to local tangental coordinate
-* args   : double *pos      I   geodetic position {lat,lon} (rad)
-*          double *r        I   vector in ecef coordinate {x,y,z}
+* args   : double *pos      I   local geodetic position {lat,lon} (rad)
+*          double *r        I   vector in ecef coordinate {x,y,z} to be transformed
 *          double *e        O   vector in local tangental coordinate {e,n,u}
 * return : none
 *-----------------------------------------------------------------------------*/
@@ -3352,7 +3352,7 @@ extern double satwavelen(int sat, int frq, const nav_t *nav)
 * compute geometric distance and receiver-to-satellite unit vector
 * args   : double *rs       I   satellilte position (ecef at transmission) (m)
 *          double *rr       I   receiver position (ecef at reception) (m)
-*          double *e        O   line-of-sight vector (ecef)
+*          double *e        O   line-of-sight unit vector (ecef)
 * return : geometric distance (m) (0>:error/no satellite position)
 * notes  : distance includes sagnac effect correction
 *-----------------------------------------------------------------------------*/
@@ -3380,7 +3380,7 @@ extern double satazel(const double *pos, const double *e, double *azel)
     double az=0.0,el=PI/2.0,enu[3];
     
     if (pos[2]>-RE_WGS84) {
-        ecef2enu(pos,e,enu);
+        ecef2enu(pos,e,enu); /* due to e is an unit vector, so enu here is an unit vector */
         az=dot(enu,enu,2)<1E-12?0.0:atan2(enu[0],enu[1]);
         if (az<0.0) az+=2*PI;
         el=asin(enu[2]);

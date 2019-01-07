@@ -733,7 +733,7 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
 *          double *rs         O   sat position and velocity (ecef)
 *                                 {x,y,z,vx,vy,vz} (m|m/s)
 *          double *dts        O   sat clock {bias,drift} (s|s/s)
-*          double *var        IO  sat position and clock error variance (m)
+*          double *var        IO  sat position and clock error variance (m), *var=vare+varc
 *                                 (NULL: no output)
 * return : status (1:ok,0:error or data outage)
 * notes  : clock includes relativistic correction but does not contain code bias
