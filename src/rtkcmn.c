@@ -863,7 +863,7 @@ extern double dot(const double *a, const double *b, int n)
     while (--n>=0) c+=a[n]*b[n];
     return c;
 }
-/* euclid norm -----------------------------------------------------------------
+/* euclid norm, i.e. vector 2 norm----------------------------------------------
 * euclid norm of vector
 * args   : double *a        I   vector a (n x 1)
 *          int    n         I   size of vector a

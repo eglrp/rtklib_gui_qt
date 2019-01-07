@@ -565,30 +565,33 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
         opt_.ionoopt=IONOOPT_BRDC;
         opt_.tropopt=TROPOPT_SAAS;
     }
-    /* satellite positons, velocities and clocks */
+    /* 1. all satellite positons, velocities and clocks */
     satposs(sol->time,obs,n,nav,opt_.sateph,rs,dts,var,svh);
     
-    /* estimate receiver position with pseudorange */
+    /* 2. estimate receiver position with pseudorange */
     stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
     
-    /* raim fde */
+    /* 3. raim fde */
     if (!stat&&n>=6&&opt->posopt[4]) {
         stat=raim_fde(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
     }
-    /* estimate receiver velocity with doppler */
+    /* 4. estimate receiver velocity with doppler */
     if (stat) 
 		estvel(obs,n,rs,dts,nav,&opt_,sol,azel_,vsat);
     
+    /* 5. output variables assigament*/
     if (azel) {
         for (i=0;i<n*2;i++) azel[i]=azel_[i];
     }
     if (ssat) {
+        /* clear old value */
         for (i=0;i<MAXSAT;i++) {
             ssat[i].vs=0;
             ssat[i].azel[0]=ssat[i].azel[1]=0.0;
             ssat[i].resp[0]=ssat[i].resc[0]=0.0;
             ssat[i].snr[0]=0;
         }
+        /* assignment */
         for (i=0;i<n;i++) {
             ssat[obs[i].sat-1].azel[0]=azel_[  i*2];
             ssat[obs[i].sat-1].azel[1]=azel_[1+i*2];

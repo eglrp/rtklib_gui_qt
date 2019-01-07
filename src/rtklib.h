@@ -227,7 +227,7 @@ extern "C" {
 #else
 #define DTTOL       0.025               /* tolerance of time difference (s) */
 #endif
-/* toe: time of ephemirs，at which eph parameters describe sat orbits--------------------------
+/* toe: time of ephemirs, at which eph parameters describe sat orbits--------------------------
 * note that: eph paras have no concept of signal time of transmission and reception
 *            however, observations, i.e. ranging signal, have.-------------------------------*/
 #define MAXDTOE     7200.0              /* max time difference to GPS Toe (s) */
@@ -366,7 +366,7 @@ extern "C" {
 #define SOLQ_DGPS   4                   /* solution status: DGPS/DGNSS */
 #define SOLQ_SINGLE 5                   /* solution status: single */
 #define SOLQ_PPP    6                   /* solution status: PPP */
-#define SOLQ_DR     7                   /* solution status: dead reconing, reconing: 估算 */
+#define SOLQ_DR     7                   /* solution status: dead reconing, reconing: means estimating; or dead reckoning?: a method of establishing one's position using the distance and direction travelled rather than astronomical observations*/
 #define MAXSOLQ     7                   /* max number of solution status */
 
 #define TIMES_GPST  0                   /* time system: gps time */
@@ -590,7 +590,7 @@ typedef struct {        /* almanac type */
     double f0,f1;       /* SV clock parameters (af0,af1) */
 } alm_t;
 
-typedef struct {        /* GPS/QZS/GAL broadcast ephemeris type */
+typedef struct {        /* GPS/QZS/GAL broadcast ephemeris type for *one* sat */
     int sat;            /* satellite number */
     int iode,iodc;      /* IODE,IODC */
     int sva;            /* SV accuracy (URA index) */
@@ -629,7 +629,7 @@ typedef struct {        /* GLONASS broadcast ephemeris type */
     double dtaun;       /* delay between L1 and L2 (s) */
 } geph_t;
 
-typedef struct {        /* precise ephemeris type */
+typedef struct {        /* precise ephemeris type for *all* sat */
     gtime_t time;       /* time (GPST) */
     int index;          /* ephemeris index for multiple files */
     double pos[MAXSAT][4]; /* satellite position/clock (ecef) (m|s) */
@@ -659,7 +659,7 @@ typedef struct {        /* SBAS ephemeris type */
     double af0,af1;     /* satellite clock-offset/drift (s,s/s) */
 } seph_t;
 
-typedef struct {        /* norad two line element(北美防空司令部二线部队) data type */
+typedef struct {        /* norad(North American Air Defense Command) two line element data type */
     char name [32];     /* common name */
     char alias[32];     /* alias name */
     char satno[16];     /* satellilte catalog number */
@@ -1060,7 +1060,7 @@ typedef struct {        /* processing options type */
     int intpref;        /* interpolate reference obs (for post mission) */
     int sbascorr;       /* SBAS correction options */
     int sbassatsel;     /* SBAS satellite selection (0:all) */
-    int rovpos;         /* rover position for fixed mode ：pos type flag for ru*/
+    int rovpos;         /* rover position for fixed mode: pos type flag for ru*/
     int refpos;         /* base position for relative mode : pos type flag for rb*/
                         /* (0:pos in prcopt,  1:average of single pos, */
                         /*  2:read from file, 3:rinex header, 4:rtcm pos) */
@@ -1110,7 +1110,7 @@ typedef struct {        /* solution options type */
     int datum;          /* datum (0:WGS84,1:Tokyo) */
     int height;         /* height (0:ellipsoidal,1:geodetic) */
     int geoid;          /* geoid model (0:EGM96,1:JGD2000) */
-    int solstatic;      /* solution of static mode (0:all,1:single), 静态模式中，解只输出最后一个历元还是每个历元都输出 */
+    int solstatic;      /* solution of static mode (0:all,1:single): in all static mode, output solotion of every epoch or just the last epoch */
     int sstat;          /* solution statistics level (0:off,1:states,2:residuals) */
     int trace;          /* debug trace level (0:off,1-5:debug) */
     double nmeaintv[2]; /* nmea output interval (s) (<0:no,0:all) */
@@ -1334,7 +1334,7 @@ typedef struct {        /* RTK server type */
     rtcm_t rtcm[3];     /* RTCM control {rov,base,corr} */
     gtime_t ftime[3];   /* download time {rov,base,corr} */
     char files[3][MAXSTRPATH]; /* download paths {rov,base,corr} */
-    obs_t obs[3][MAXOBSBUF]; /* observation data {rov,base,corr} */
+    obs_t obs[3][MAXOBSBUF]; /* observation data {rov,base,corr}, it can contain MAXOBSBUF epochs at most. */
     nav_t nav;          /* navigation data */
     sbsmsg_t sbsmsg[MAXSBSMSG]; /* SBAS message buffer */
     stream_t stream[8]; /* streams {rov,base,corr,sol1,sol2,logr,logb,logc} */

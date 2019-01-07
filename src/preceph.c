@@ -49,7 +49,7 @@
 #define NMAX        10              /* order of polynomial interpolation */
 #define MAXDTE      900.0           /* max time difference to ephem time (s) */
 #define EXTERR_CLK  1E-3            /* extrapolation error for clock (m/s) */
-#define EXTERR_EPH  5E-7            /* extrapolation error for ephem (m/s^2) */
+#define EXTERR_EPH  5E-7            /* extrapolation error for ephem (m/s^2), as in physics s=a*t*t/2 */
 
 /* satellite code to satellite system ----------------------------------------*/
 static int code2sys(char code)
@@ -506,7 +506,13 @@ static double interppol(const double *x, double *y, int n)
     }
     return y[0];
 }
-/* satellite position by precise ephemeris -----------------------------------*/
+/* satellite position by precise ephemeris -----------------------------------
+ *  dts[1]  double  one-lement-array, precise clock bias
+ *  vare    double  sat position and clock error variance (m) (NULL: no output)
+ * Note that:
+ *  pephpos() use peph[i].pos[3](clock) to get a relative rough clock compared with pephclk().
+ *  pephclk() use peph[i].pclk to get relative more accurate clock bias and drift
+ * -------------------------------------------------------------------------*/
 static int pephpos(gtime_t time, int sat, const nav_t *nav, double *rs,
                    double *dts, double *vare, double *varc)
 {
@@ -523,24 +529,41 @@ static int pephpos(gtime_t time, int sat, const nav_t *nav, double *rs,
         trace(3,"no prec ephem %s sat=%2d\n",time_str(time,0),sat);
         return 0;
     }
-    /* binary search */
+    /* 1. binary search, search result: 1) finded, i.e. interpolation; 2) not finded, i.e. extrapolation */
     for (i=0,j=nav->ne-1;i<j;) {
-        k=(i+j)/2;
-        if (timediff(nav->peph[k].time,time)<0.0) i=k+1; else j=k;
+        k=(i+j)/2; /* note that k is int type */
+        if (timediff(nav->peph[k].time,time)<0.0) /* pehp[k].time < time */
+            /* in binary search algorithm, write {i=k+1, j=k} or {i=k,j=k-1}, do not write {i=k+1, j=k-1} at the same time */
+            i=k+1; /* the last executed sentence before excit the loop */
+        else
+            j=k;
     }
-    index=i<=0?0:i-1;
+    index=i<=0?0:i-1; /* 'i=k+1' is the last sentence to excit the loop, so 'index' need to be i-1 */
     
-    /* polynomial interpolation for orbit */
+    /* 2.  polynomial interpolation for orbit--------------------------------
+     * 2.1 locate interpolation window to an appropriate position
+     * try to locate i at:
+     *              NMAX/2      NMAX/2
+     *  |<--...-->|<--------->|<--------->|<--...-->|
+     *  0         i         index       j_max    nav->ne
+     *            j `
+     *------------------------------------------------------------------*/
     i=index-(NMAX+1)/2;
-    if (i<0) i=0; else if (i+NMAX>=nav->ne) i=nav->ne-NMAX-1;
+    if (i<0) i=0;
+    else if (i+NMAX>=nav->ne) i=nav->ne-NMAX-1;
     
+    /* 2.2 compute delta_t between 'time' and 'peph[i+j].time' */
     for (j=0;j<=NMAX;j++) {
         t[j]=timediff(nav->peph[i+j].time,time);
         if (norm(nav->peph[i+j].pos[sat-1],3)<=0.0) {
             trace(3,"prec ephem outage %s sat=%2d\n",time_str(time,0),sat);
-            return 0;
+            return 0; /* all data in the interpolation interval are required */
         }
     }
+
+    /* 2.3 earth rotation for peph[i+j].pos[0-1]
+     * due to peph[j].pos is result at ecef, these peph[j].pos need to be uniformed at time 'time',
+     * to reproduce the orbit of sat at that time in the Space fixed coordinate system */
     for (j=0;j<=NMAX;j++) {
         pos=nav->peph[i+j].pos[sat-1];
 #if 0
@@ -555,48 +578,57 @@ static int pephpos(gtime_t time, int sat, const nav_t *nav, double *rs,
 #endif
         p[2][j]=pos[2];
     }
+
+    /* 2.4 Neville polynomial interpolation */
     for (i=0;i<3;i++) {
         rs[i]=interppol(t,p[i],NMAX+1);
     }
-    if (vare) {
+    /* 2.5 var for orbit */
+    if (vare) { /* vare=NULL: no output */
         for (i=0;i<3;i++) s[i]=nav->peph[index].std[sat-1][i];
         std=norm(s,3);
         
         /* extrapolation error for orbit */
-        if      (t[0   ]>0.0) std+=EXTERR_EPH*SQR(t[0   ])/2.0;
+        if      (t[0   ]>0.0) std+=EXTERR_EPH*SQR(t[0   ])/2.0; /* see EXTERR_EPH definition */
         else if (t[NMAX]<0.0) std+=EXTERR_EPH*SQR(t[NMAX])/2.0;
         *vare=SQR(std);
     }
-    /* linear interpolation for clock */
+
+    /* 3. linear interpolation for clock */
     t[0]=timediff(time,nav->peph[index  ].time);
     t[1]=timediff(time,nav->peph[index+1].time);
-    c[0]=nav->peph[index  ].pos[sat-1][3];
+    c[0]=nav->peph[index  ].pos[sat-1][3]; /* peph[index].pos[0-2]: (xyz), pos[3]: clk*/
     c[1]=nav->peph[index+1].pos[sat-1][3];
     
-    if (t[0]<=0.0) {
+    /* pehp sort order: {pehp[0],...,peph[end]}={smallest time, ..., biggest time} */
+    if (t[0]<=0.0) { /* extrapolation : time < {pehp[0], ..., pehp[1]} */
         if ((dts[0]=c[0])!=0.0) {
             std=nav->peph[index].std[sat-1][3]*CLIGHT-EXTERR_CLK*t[0];
         }
     }
-    else if (t[1]>=0.0) {
+    else if (t[1]>=0.0) {/* extrapolation: {pehp[0], ..., pehp[1]} < time */
         if ((dts[0]=c[1])!=0.0) {
             std=nav->peph[index+1].std[sat-1][3]*CLIGHT+EXTERR_CLK*t[1];
         }
     }
-    else if (c[0]!=0.0&&c[1]!=0.0) {
-        dts[0]=(c[1]*t[0]-c[0]*t[1])/(t[0]-t[1]);
-        i=t[0]<-t[1]?0:1;
+    else if (c[0]!=0.0&&c[1]!=0.0) {/* interpolation: {t[0], time, t[1]}. c[0] & c[1] both have value */
+        dts[0]=(c[1]*t[0]-c[0]*t[1])/(t[0]-t[1]); /* interpolating algorithm */
+        i=t[0]<-t[1]?0:1; /* select a farther point between t[0] and t[1], because we need to a worst point to describe it precision */
         std=nav->peph[index+i].std[sat-1][3]+EXTERR_CLK*fabs(t[i]);
     }
-    else {
+    else { /* clock outage, at least one of c[0] or c[1] do not have value */
         dts[0]=0.0;
     }
-    if (varc) *varc=SQR(std);
+
+    if (varc) /* varc=NULL: no output */
+        *varc=SQR(std);
     return 1;
 }
-/* satellite clock by precise clock ------------------------------------------*/
-static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts,
-                   double *varc)
+/* satellite clock by precise clock ------------------------------------------
+ * Note that:
+ *  compared with pephpos, the window of clock interpolation is 2, as NMAX for orbit
+ *----------------------------------------------------------------------------*/
+static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double *varc)
 {
     double t[2],c[2],std;
     int i,j,k,index;
@@ -635,7 +667,7 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts,
         i=t[0]<-t[1]?0:1;
         std=nav->pclk[index+i].std[sat-1][0]*CLIGHT+EXTERR_CLK*fabs(t[i]);
     }
-    else {
+    else { /* clock outage, at least one of c[0] or c[1] do not have value */
         trace(3,"prec clock outage %s sat=%2d\n",time_str(time,0),sat);
         return 0;
     }
@@ -693,10 +725,10 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
 }
 /* satellite position/clock by precise ephemeris/clock -------------------------
 * compute satellite position/clock with precise ephemeris/clock
-* args   : gtime_t time       I   time (gpst)
+* args   : gtime_t time       I   time (gpst), signal transmission time after brd eph clk correction(without relativity effect correction)
 *          int    sat         I   satellite number
 *          nav_t  *nav        I   navigation data
-*          int    opt         I   sat postion option
+*          int    opt         I   sat postion option, this figure is identical to variable 'iode'
 *                                 (0: center of mass, 1: antenna phase center)
 *          double *rs         O   sat position and velocity (ecef)
 *                                 {x,y,z,vx,vy,vz} (m|m/s)
@@ -713,22 +745,28 @@ extern int peph2pos(gtime_t time, int sat, const nav_t *nav, int opt,
                     double *rs, double *dts, double *var)
 {
     gtime_t time_tt;
-    double rss[3],rst[3],dtss[1],dtst[1],dant[3]={0},vare=0.0,varc=0.0,tt=1E-3;
+    double rss[3],rst[3];
+    /* dtss is a temp variable for dts, dtst is a temp variable for dts_tt
+     * definite these var in one-element-array form so that they can be treated as pointers when passing them to functions */
+    double dtss[1],dtst[1];
+    double dant[3]={0},vare=0.0,varc=0.0,tt=1E-3;
     int i;
     
     trace(4,"peph2pos: time=%s sat=%2d opt=%d\n",time_str(time,3),sat,opt);
     
     if (sat<=0||MAXSAT<sat) return 0;
     
-    /* satellite position and clock bias */
+    /* 1. satellite position and clock bias */
     if (!pephpos(time,sat,nav,rss,dtss,&vare,&varc)||
         !pephclk(time,sat,nav,dtss,&varc)) return 0;
-    
+
+    /* 1.1 for sat pos vel and clk drift */
     time_tt=timeadd(time,tt);
     if (!pephpos(time_tt,sat,nav,rst,dtst,NULL,NULL)||
         !pephclk(time_tt,sat,nav,dtst,NULL)) return 0;
     
-    /* satellite antenna offset correction */
+    /* 2.1 satellite antenna offset correction
+     * 2.2 sat vel                            */
     if (opt) {
         satantoff(time,rss,sat,nav,dant);
     }
@@ -736,14 +774,18 @@ extern int peph2pos(gtime_t time, int sat, const nav_t *nav, int opt,
         rs[i  ]=rss[i]+dant[i];
         rs[i+3]=(rst[i]-rss[i])/tt;
     }
-    /* relativistic effect correction */
-    if (dtss[0]!=0.0) {
+
+    /* 3.1 relativistic effect correction
+     * 3.2 clk drift                          */
+    if (dtss[0]!=0.0) { /* clk at 'time' */
         dts[0]=dtss[0]-2.0*dot(rs,rs+3,3)/CLIGHT/CLIGHT;
         dts[1]=(dtst[0]-dtss[0])/tt;
     }
-    else { /* no precise clock */
+    else { /* no precise clock: for program robustness: avoid other unknown case in pephpos() */
         dts[0]=dts[1]=0.0;
     }
+
+    /* variance */
     if (var) *var=vare+varc;
     
     return 1;

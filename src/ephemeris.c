@@ -197,12 +197,11 @@ extern double eph2clk(gtime_t time, const eph_t *eph)
 * args   : gtime_t time     I   time (gpst)
 *          eph_t *eph       I   broadcast ephemeris
 *          double *rs       O   satellite position (ecef) {x,y,z} (m)
-*          double *dts      O   satellite clock bias (s)
+*          double *dts      O   {sat clock bias(s), clock drift}, considering relativity effect
 *          double *var      O   satellite position and clock variance (m^2)
 * return : none
-* notes  : see ref [1],[7],[8]
-*          satellite clock includes relativity correction without code bias
-*          (tgd or bgd)
+* notes  : 1) see ref [1],[7],[8]
+*          2) satellite clock includes relativity correction without code bias (tgd or bgd)
 *-----------------------------------------------------------------------------*/
 extern void eph2pos(gtime_t time, const eph_t *eph, double *rs, double *dts,
                     double *var)
@@ -217,6 +216,8 @@ extern void eph2pos(gtime_t time, const eph_t *eph, double *rs, double *dts,
         rs[0]=rs[1]=rs[2]=*dts=*var=0.0;
         return;
     }
+
+    /* 1.compute sat postions */
     tk=timediff(time,eph->toe);
     
     switch ((sys=satsys(eph->sat,&prn))) {
@@ -258,20 +259,22 @@ extern void eph2pos(gtime_t time, const eph_t *eph, double *rs, double *dts,
         rs[1]=-xg*sino+yg*coso*COS_5+zg*coso*SIN_5;
         rs[2]=-yg*SIN_5+zg*COS_5;
     }
-    else {
+    else { /* MEO and IGSO(for beidou) */
         O=eph->OMG0+(eph->OMGd-omge)*tk-omge*eph->toes;
         sinO=sin(O); cosO=cos(O);
         rs[0]=x*cosO-y*cosi*sinO;
         rs[1]=x*sinO+y*cosi*cosO;
         rs[2]=y*sin(i);
     }
+
+    /* 2.compute sat clock bias */
     tk=timediff(time,eph->toc);
     *dts=eph->f0+eph->f1*tk+eph->f2*tk*tk;
     
     /* relativity correction */
     *dts-=2.0*sqrt(mu*eph->A)*eph->e*sinE/SQR(CLIGHT);
     
-    /* position and clock error variance */
+    /* 3.position and clock error variance */
     *var=var_uraeph(sys,eph->sva);
 }
 /* glonass orbit differential equations --------------------------------------*/
@@ -437,8 +440,9 @@ static eph_t *seleph(gtime_t time, int sat, int iode, const nav_t *nav)
         }
         /* 4.compute time diff */
         if ((t=fabs(timediff(nav->eph[i].toe,time)))>tmax) continue;
-        /* 5.validation: iode >=0 means valid eph */
-        if (iode>=0) return nav->eph+i;
+        /* 5.find precise ephemeris: see satpos(): iode=0:ssr_apc, iode=1:ssr_CoM, iode=-1:brd eph */
+        if (iode>=0)
+            return nav->eph+i;
         /* 6.select and mark the best eph when toe closest to time */
         if (t<=tmin)
         {
@@ -446,8 +450,7 @@ static eph_t *seleph(gtime_t time, int sat, int iode, const nav_t *nav)
         }
     }
     if (iode>=0||j<0) {
-        trace(3,"no broadcast ephemeris: %s sat=%2d iode=%3d\n",time_str(time,0),
-              sat,iode);
+        trace(3,"no broadcast ephemeris: %s sat=%2d iode=%3d\n",time_str(time,0), sat,iode);
         return NULL;
     }
     return nav->eph+j;
@@ -494,6 +497,9 @@ static seph_t *selseph(gtime_t time, int sat, const nav_t *nav)
     return nav->seph+j;
 }
 /* get one satellite clock using broadcast ephemeris -------------------------
+ * input:
+ *      time    signal transmission time
+ *      teph    usually observation time, i.e. signal reception time
  * procedure:
  *      1) select ephemeris eph_t at time teph
  *      2) use ephemeirs and its model to get clock correction: ?eph2clk()
@@ -527,7 +533,15 @@ static int ephclk(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     
     return 1;
 }
-/* satellite position and clock by broadcast ephemeris -----------------------*/
+/* satellite position and clock by broadcast ephemeris -------------------------
+ *   time    obs transmission time, (in satposs) after sat clock bias correction with brd_eph
+ *   teph    select ephemeris time = reception time of obs[0]
+ * note that:
+ *  1) this func, ephpos(), is very similar with ephclk().
+ *  2) differences between ephpos() and ephclk():
+ *      ephpos(): (relativity effect) correct; (clock drift) yes; (var) yes
+ *      ephclk(): (relativity effect) do not ; (clock drift) no ; (var) no
+ * ---------------------------------------------------------------------------*/
 static int ephpos(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
                   int iode, double *rs, double *dts, double *var, int *svh)
 {
@@ -544,10 +558,16 @@ static int ephpos(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     *svh=-1;
     
     if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_CMP) {
+        /* 1. select eph again */
+        /* note that: in satposs, it has called seleph() and correct sat clock bias
+         * after that correction, here, do it again as if iterating */
         if (!(eph=seleph(teph,sat,iode,nav))) return 0;
+        /* 2. compute sat pos, clk bias, var */
         eph2pos(time,eph,rs,dts,var);
         time=timeadd(time,tt);
+        /* 3. prepare for sat vel, clk drift */
         eph2pos(time,eph,rst,dtst,var);
+        /* 4. svh */
         *svh=eph->svh;
     }
     else if (sys==SYS_GLO) {
@@ -564,9 +584,9 @@ static int ephpos(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
         seph2pos(time,seph,rst,dtst,var);
         *svh=seph->svh;
     }
-    else return 0;
+    else return 0;/* unknown system */
     
-    /* satellite velocity and clock drift by differential approx */
+    /* 5. satellite velocity and clock drift by differential approx */
     for (i=0;i<3;i++) rs[i+3]=(rst[i]-rs[i])/tt; /* sat velocity */
     dts[1]=(dtst[0]-dts[0])/tt; /* clock drift */
     
@@ -737,10 +757,12 @@ extern int satpos(gtime_t time, gtime_t teph, int sat, int ephopt,
     *svh=-1;
     return 0;
 }
-/* satellite positions and clocks at one epoch---------------------------------
+/* all satellite positions and clocks at one epoch---------------------------------
 * compute satellite positions, velocities and clocks
 * args   : gtime_t teph     I   time to select ephemeris (gpst) in variable nav.
 *                               it's obs signal reception time not signal transmission time.
+*                               teph=obs[0].time.
+*                               [q]: obs[i].time might have little difference?
 *          obsd_t *obs      I   observation data
 *          int    n         I   number of observation data in this epoch
 *          nav_t  *nav      I   navigation data, i.e. an ephemeris list with ephemeris from
@@ -788,30 +810,31 @@ extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
         /* 2.compute transmission time by satellite clock */
         time[i]=timeadd(obs[i].time,-pr/CLIGHT);
         
-        /* 3.correct satellite clock bias by broadcast ephemeris
-         */
+        /* 3.correct satellite clock bias by broadcast ephemeris */
         if (!ephclk(time[i],teph,obs[i].sat,nav,&dt)) {
             trace(3,"no broadcast clock %s sat=%2d\n",time_str(time[i],3),obs[i].sat);
             continue;
         }
         time[i]=timeadd(time[i],-dt);
         
-        /* 4.satellite position and clock at transmission time */
+        /* 4.satellite position and clock at corrected transmission time */
         if (!satpos(time[i],teph,obs[i].sat,ephopt,nav,rs+i*6,dts+i*2,var+i,svh+i)) {
             trace(3,"no ephemeris %s sat=%2d\n",time_str(time[i],3),obs[i].sat);
             continue;
         }
-        /* if no precise clock available, use broadcast clock instead */
+        /* 4.1 if no precise clock available(due to clk outage, see pephclk), use broadcast clock instead */
         if (dts[i*2]==0.0) {
             if (!ephclk(time[i],teph,obs[i].sat,nav,dts+i*2)) continue;
-            dts[1+i*2]=0.0;
+            dts[1+i*2]=0.0; /* no clk drift will output, due to low precision of brd eph clk,
+                             * the way, drift=(dtss-dtst)/(tss-tst), do not apply to this case any more */
             *var=SQR(STD_BRDCCLK);
         }
     }
+    /* trace output computation result: sat pos, clk, var, svh */
     for (i=0;i<n&&i<2*MAXOBS;i++) {
         trace(4,"%s sat=%2d rs=%13.3f %13.3f %13.3f dts=%12.3f var=%7.3f svh=%02X\n",
               time_str(time[i],6),obs[i].sat,rs[i*6],rs[1+i*6],rs[2+i*6],
-              dts[i*2]*1E9,var[i],svh[i]);
+              dts[i*2]*1E9,var[i],svh[i]); /* note that: the factor of clk is 1E9 */
     }
 }
 /* select satellite ephemeris --------------------------------------------------

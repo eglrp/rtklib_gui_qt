@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------------
+﻿/*------------------------------------------------------------------------------
 * rtksvr.c : rtk server functions
 *
 *          Copyright (C) 2007-2017 by T.TAKASU, All rights reserved.
@@ -307,6 +307,8 @@ static void updatesvr(rtksvr_t *svr, int ret, obs_t *obs, nav_t *nav, int sat,
 /* decode receiver raw/rtcm data ,after decoding:---------------
  * set svr->nb[i]=0
  * updatesvr(svr,ret,obs,nav,sat,sbsmsg,index,fobs)
+ * reutrn:
+ *      fobs: epoch number of decoded obs
  --------------------------------------------------------------*/
 static int decoderaw(rtksvr_t *svr, int index)
 {
@@ -319,11 +321,12 @@ static int decoderaw(rtksvr_t *svr, int index)
     
     rtksvrlock(svr);
     
-    for (i=0;i<svr->nb[index];i++) { /* decode byte by byte */
-        
+    for (i=0;i<svr->nb[index];i++) { /* loop byte by byte */
         /* input rtcm/receiver raw data from stream */
         if (svr->format[index]==STRFMT_RTCM2) {
+            /* input byte by byte */
             ret=input_rtcm2(svr->rtcm+index,svr->buff[index][i]);
+            /* due to loop byte by byte, so most of time these following step is flogging a dead horse */
             obs=&svr->rtcm[index].obs;
             nav=&svr->rtcm[index].nav;
             sat=svr->rtcm[index].ephsat;
@@ -597,8 +600,8 @@ static void *rtksvrthread(void *arg)
             svr->rtk.opt.refpos==POSOPT_SINGLE) {
             if ((svr->rtk.opt.maxaveep<=0||svr->nave<svr->rtk.opt.maxaveep)&&
                  /* only use the first epoch for positioning */
-                 pntpos(svr->obs[1][0].data,svr->obs[1][0].n,&svr->nav,
-                       &svr->rtk.opt,&sol,NULL,NULL,msg)) {
+                 pntpos(svr->obs[1][0].data, svr->obs[1][0].n, &svr->nav,
+                       &svr->rtk.opt, &sol, NULL, NULL, msg)) {
                 svr->nave++;
                 for (i=0;i<3;i++) {
                     /* sol: solution after pntpos */
@@ -939,7 +942,7 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
     for (i=3;i<5;i++) {
         writesolhead(svr->stream+i,svr->solopt+i-3);
     }
-    /* 5.create rtk server thread : real-time processing */
+    /* 5.create a background rtk server thread : real-time processing */
 #ifdef WIN32
     /* see: https://www.cnblogs.com/ay-a/p/8762951.html */
     if (!(svr->thread=CreateThread(NULL,0,rtksvrthread,svr,0,NULL))) {
