@@ -521,6 +521,7 @@ extern void satno2id(int sat, char *id)
 *          int    svh       I   sv health flag
 *          prcopt_t *opt    I   processing options (NULL: not used)
 * return : status (1:excluded,0:not excluded)
+* test item: 1) exclude flag in prcopt_t 2) unselected system 3) svh flag 4) ura with in threshold MAX_VAR_EPH
 *-----------------------------------------------------------------------------*/
 extern int satexclude(int sat, double var, int svh, const prcopt_t *opt)
 {
@@ -977,7 +978,14 @@ extern int solve(const char *tr, const double *A, const double *Y, int n,
 
 #else /* without LAPACK/BLAS or MKL */
 
-/* multiply matrix -----------------------------------------------------------*/
+/* multiply matrix: C_k = alpha*A*B + beta*C_(k-1) ---------------------------
+ * args:
+ *  char*   tr      I   transpose flag of input matrix
+ *  int     n,k     I   output matrix dimension: C(n,k)
+ *  int     m       I   linking dimension between A and B: A(n,m), B(m,k)
+ *  double  alpha   I
+ *  double  beta    I
+*---------------------------------------------------------------------------*/
 extern void matmul(const char *tr, int n, int k, int m, double alpha,
                    const double *A, const double *B, double beta, double *C)
 {
@@ -987,15 +995,16 @@ extern void matmul(const char *tr, int n, int k, int m, double alpha,
     for (i=0;i<n;i++) for (j=0;j<k;j++) {
         d=0.0;
         switch (f) {
-            case 1: for (x=0;x<m;x++) d+=A[i+x*n]*B[x+j*m]; break;
-            case 2: for (x=0;x<m;x++) d+=A[i+x*n]*B[j+x*k]; break;
-            case 3: for (x=0;x<m;x++) d+=A[x+i*m]*B[x+j*m]; break;
-            case 4: for (x=0;x<m;x++) d+=A[x+i*m]*B[j+x*k]; break;
+            case 1 /* NN */: for (x=0;x<m;x++) d+=A[i+x*n]*B[x+j*m]; break;
+            case 2 /* NT */: for (x=0;x<m;x++) d+=A[i+x*n]*B[j+x*k]; break;
+            case 3 /* TN */: for (x=0;x<m;x++) d+=A[x+i*m]*B[x+j*m]; break;
+            case 4 /* TT */: for (x=0;x<m;x++) d+=A[x+i*m]*B[j+x*k]; break;
         }
-        if (beta==0.0) C[i+j*n]=alpha*d; else C[i+j*n]=alpha*d+beta*C[i+j*n];
+        if (beta==0.0) C[i+j*n]=alpha*d;
+        else C[i+j*n]=alpha*d+beta*C[i+j*n];
     }
 }
-/* LU decomposition ----------------------------------------------------------*/
+/* LU decomposition: triangle decomposition ----------------------------------*/
 static int ludcmp(double *A, int n, int *indx, double *d)
 {
     double big,s,tmp,*vv=mat(n,1);
@@ -1090,7 +1099,7 @@ extern int solve(const char *tr, const double *A, const double *Y, int n,
 extern int lsq(const double *A, const double *y, int n, int m, double *x,
                double *Q)
 {
-    double *Ay;
+    double *Ay; /* transpos(B)*y */
     int info;
     
     if (m<n) return -1;
@@ -3350,8 +3359,8 @@ extern double satwavelen(int sat, int frq, const nav_t *nav)
 }
 /* geometric distance ----------------------------------------------------------
 * compute geometric distance and receiver-to-satellite unit vector
-* args   : double *rs       I   satellilte position (ecef at transmission) (m)
-*          double *rr       I   receiver position (ecef at reception) (m)
+* args   : double *rs       I   sat {pos,vel} (ecef at transmission) (m), vel is not used here.
+*          double *rr       I   rov pos (ecef at reception) (m)
 *          double *e        O   line-of-sight unit vector (ecef)
 * return : geometric distance (m) (0>:error/no satellite position)
 * notes  : distance includes sagnac effect correction
@@ -3364,7 +3373,7 @@ extern double geodist(const double *rs, const double *rr, double *e)
     if (norm(rs,3)<RE_WGS84) return -1.0;
     for (i=0;i<3;i++) e[i]=rs[i]-rr[i];
     r=norm(e,3);
-    for (i=0;i<3;i++) e[i]/=r;
+    for (i=0;i<3;i++) e[i]/=r; /* unitization */
     return r+OMGE*(rs[0]*rr[1]-rs[1]*rr[0])/CLIGHT;
 }
 /* satellite azimuth/elevation angle -------------------------------------------
@@ -3430,7 +3439,7 @@ extern void dops(int ns, const double *azel, double elmin, double *dop)
 *          double *ion      I   iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3}
 *          double *pos      I   receiver position {lat,lon,h} (rad,m)
 *          double *azel     I   azimuth/elevation angle {az,el} (rad)
-* return : ionospheric delay (L1) (m)
+* return : ionospheric delay (****L1****) (m)
 *-----------------------------------------------------------------------------*/
 extern double ionmodel(gtime_t t, const double *ion, const double *pos,
                        const double *azel)
@@ -3443,6 +3452,8 @@ extern double ionmodel(gtime_t t, const double *ion, const double *pos,
     int week;
     
     if (pos[2]<-1E3||azel[1]<=0) return 0.0;
+
+    /* when do not pass in ion parameters, use default parameters */
     if (norm(ion,8)<=0.0) ion=ion_default;
     
     /* earth centered angle (semi-circle) */

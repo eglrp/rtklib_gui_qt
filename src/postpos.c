@@ -998,12 +998,12 @@ static FILE *openfile(const char *outfile)
     return !*outfile?stdout:fopen(outfile,"a");
 }
 /* execute processing session ------------------------------------------------
-* 一些准备工作：
-*	1)读取各类数据：ion, erp, obs, dcb, otl 
-*	2)antpos(); 
-*	3)[可选]打开统计结果输出文件（*.stat），文件句柄: rtkpos.c 中的fp_stat静态变量
-*	4)写入输出结果的头（*.pos）; 结构sol_t
-*	5)根据opt，选择的滤波方向，定位模式在procpos()函数中选择
+* procedure：
+*	1)read data: ion, erp, obs, dcb, otl
+*	2)antpos();
+*	3)[optional]open statistics output(*.stat), FILE handle: static var 'fp_stat' in rtkpos.c
+*	4)write output file(*.pos); struct sol_t
+*	5)choose filter direction, choose positioning mode in procpos()
 * from:	execses_r()
 * to:	procpos()
 ******************************************************************************/
