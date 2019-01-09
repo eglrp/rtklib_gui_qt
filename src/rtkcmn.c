@@ -985,6 +985,7 @@ extern int solve(const char *tr, const double *A, const double *Y, int n,
  *  int     m       I   linking dimension between A and B: A(n,m), B(m,k)
  *  double  alpha   I
  *  double  beta    I
+ * note that: to use matmul, the input matrix must be assigned in colomn order
 *---------------------------------------------------------------------------*/
 extern void matmul(const char *tr, int n, int k, int m, double alpha,
                    const double *A, const double *B, double beta, double *C)
@@ -3406,11 +3407,12 @@ extern double satazel(const double *pos, const double *e, double *azel)
 * return : none
 * notes  : dop[0]-[3] return 0 in case of dop computation error
 *-----------------------------------------------------------------------------*/
-#define SQRT(x)     ((x)<0.0||(x)!=(x)?0.0:sqrt(x))
+#define SQRT(x)     ((x)<0.0||(x)!=(x)?0.0:sqrt(x)) /*(x)!=(x) is true: (x) is nan */
 
 extern void dops(int ns, const double *azel, double elmin, double *dop)
 {
-    double H[4*MAXSAT],Q[16],cosel,sinel;
+    double H[4*MAXSAT];/*4 row, MAXSAT col */
+    double Q[16],cosel,sinel;
     int i,n;
     
     for (i=0;i<4;i++) dop[i]=0.0;
@@ -3418,10 +3420,13 @@ extern void dops(int ns, const double *azel, double elmin, double *dop)
         if (azel[1+i*2]<elmin||azel[1+i*2]<=0.0) continue;
         cosel=cos(azel[1+i*2]);
         sinel=sin(azel[1+i*2]);
-        H[  4*n]=cosel*sin(azel[i*2]);
-        H[1+4*n]=cosel*cos(azel[i*2]);
-        H[2+4*n]=sinel;
-        H[3+4*n++]=1.0;
+        /* 1) H is a transposed matrix, so assign in col order
+         * 2) H is GDOP design matrix for ENU,
+         *    another way to define Q for GDOP is: Q=trans(B)B for ecef */
+        H[  4*n]=cosel*sin(azel[i*2]);  /* E component */
+        H[1+4*n]=cosel*cos(azel[i*2]);  /* N component */
+        H[2+4*n]=sinel;                 /* Z component */
+        H[3+4*n++]=1.0;                 /* dt_r*/
     }
     if (n<4) return;
     

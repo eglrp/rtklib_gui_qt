@@ -1398,7 +1398,7 @@ typedef struct {        /* imu type */
 typedef void fatalfunc_t(const char *); /* fatal callback function type */
 
 /* global variables ----------------------------------------------------------*/
-extern const double chisqr[];        /* chi-sqr(n) table (alpha=0.001) */
+extern const double chisqr[];        /* chi-sqr(n) table (alpha=0.001), see rtkcmn.c */
 extern const double lam_carr[];      /* carrier wave length (m) {L1,L2,...}, see rtkcmn.c */
 extern const prcopt_t prcopt_default; /* default positioning options */
 extern const solopt_t solopt_default; /* default solution output options */

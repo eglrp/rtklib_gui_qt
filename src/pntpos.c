@@ -400,7 +400,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             sol->dtr[3]=x[6]/CLIGHT; /* ISB: bds-gps time offset (s) */
             for (j=0;j<6;j++) sol->rr[j]=j<3?x[j]:0.0;
             for (j=0;j<3;j++) sol->qr[j]=(float)Q[j+j*NX];
-            sol->qr[3]=(float)Q[1];    /* cov xy */ /* sorted in colomn or raw order is doesn't matter here */
+            sol->qr[3]=(float)Q[1];    /* cov xy */ /* sorted in colomn or row order is doesn't matter here */
             sol->qr[4]=(float)Q[2+NX]; /* cov yz */
             sol->qr[5]=(float)Q[2];    /* cov zx */
             sol->ns=(unsigned char)ns;
