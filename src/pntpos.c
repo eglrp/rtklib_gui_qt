@@ -323,7 +323,10 @@ static int  rescode(int iter, const obsd_t *obs, int n, const double *rs,
     return nv;
 }
 /* validate solution -----------------------------------------------------------
-* return:  0:failed, 1: ok----------------------------------------------------*/
+ * validation procedure: 1) chi-square dalidation  2) gdop validation
+* return    :  0:failed, 1: ok
+* note that : if failed, obs might contain gross error, need raim_fde
+* ----------------------------------------------------------------------------*/
 static int valsol(const double *azel, const int *vsat, int n,
                   const prcopt_t *opt, const double *v, int nv, int nx,
                   char *msg)
@@ -424,7 +427,12 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     
     return 0;
 }
-/* raim fde (failure detection and exclution) -------------------------------*/
+/* raim fde (failure detection and exclution) ---------------------------------
+ * reference:
+ * [1]Sect.5.1.1 RAIM FDE based on Least Squar Residual in
+ * Yun Wu, 2009, Algorithm Research on GNSS Receiver Autonomous Integrity Monitoring
+ * [2]B.W.Parkinson,1988, Autonomous GPS Integrity Monitoring Using the Psedorange Residual
+*-----------------------------------------------------------------------------*/
 static int raim_fde(const obsd_t *obs, int n, const double *rs,
                     const double *dts, const double *vare, const int *svh,
                     const nav_t *nav, const prcopt_t *opt, sol_t *sol,
@@ -433,7 +441,7 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
     obsd_t *obs_e;
     sol_t sol_e={{0}};
     char tstr[32],name[16],msg_e[128];
-    double *rs_e,*dts_e,*vare_e,*azel_e,*resp_e,rms_e,rms=100.0;
+    double *rs_e,*dts_e,*vare_e,*azel_e,*resp_e,rms_e,rms=100.0; /* rms initial value */
     int i,j,k,nvsat,stat=0,*svh_e,*vsat_e,sat=0;
     
     trace(3,"raim_fde: %s n=%2d\n",time_str(obs[0].time,0),n);
@@ -442,11 +450,10 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
     rs_e = mat(6,n); dts_e = mat(2,n); vare_e=mat(1,n); azel_e=zeros(2,n);
     svh_e=imat(1,n); vsat_e=imat(1,n); resp_e=mat(1,n); 
     
-    for (i=0;i<n;i++) {
-        
-        /* satellite exclution: exclude a sat in obs[i] */
+    for (i=0;i<n;i++) { 
+        /* satellite exclution */
         for (j=k=0;j<n;j++) {
-            if (j==i) continue;
+            if (j==i) continue; /*exclude a sat in obs[i]*/
             obs_e[k]=obs[j];
             matcpy(rs_e +6*k,rs +6*j,6,1);
             matcpy(dts_e+2*k,dts+2*j,2,1);
@@ -455,7 +462,7 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
         }
         /* estimate receiver position without a satellite */
         if (!estpos(obs_e,n-1,rs_e,dts_e,vare_e,svh_e,nav,opt,&sol_e,azel_e,
-                    vsat_e,resp_e,msg_e)) {
+                    vsat_e,resp_e,msg_e)) { /* means gross error(s) is/are still amid the rest observations */
             trace(3,"raim_fde: exsat=%2d (%s)\n",obs[i].sat,msg);
             continue;
         }
@@ -466,17 +473,18 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
             rms_e+=SQR(resp_e[j]);
             nvsat++;
         }
-        if (nvsat<5) {
-            trace(3,"raim_fde: exsat=%2d lack of satellites nvsat=%2d\n",
-                  obs[i].sat,nvsat);
+        if (nvsat<5) { /* according to raim principle: due to # of parameter=4,
+            only when # of redundant obs >=1 can we detect gross error; while >=2, can pick out gross error among obs */
+            trace(3,"raim_fde: exsat=%2d lack of satellites nvsat=%2d\n", obs[i].sat,nvsat);
             continue;
         }
         rms_e=sqrt(rms_e/nvsat);
         
         trace(3,"raim_fde: exsat=%2d rms=%8.3f\n",obs[i].sat,rms_e);
         
-        if (rms_e>rms) continue;
-        
+        if (rms_e>rms) continue; /* That rms do not improve means a valid sat is excluded but invalid one */
+        else{ /*raim fde have found an invalid sat*/}
+
         /* save result */
         for (j=k=0;j<n;j++) {
             if (j==i) continue;
@@ -484,15 +492,15 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
             vsat[j]=vsat_e[k];
             resp[j]=resp_e[k++];
         }
-        stat=1;
+        stat=1; /*update stat from 0 to 1.(0:positioning failed, 1:ok)*/
         *sol=sol_e;
         sat=obs[i].sat;
-        rms=rms_e;
-        vsat[i]=0;/* sat validation flag: 0=invalid, 1=valid */
+        rms=rms_e; /* update rms to an improved one after invalid sat is excluding */
+        vsat[i]=0; /* invalid sat finded after raim fde. (0=invalid, 1=valid) */
         strcpy(msg,msg_e);
     }
     if (stat) {
-        time2str(obs[0].time,tstr,2); satno2id(sat,name);
+        time2str(obs[0].time,tstr,2); satno2id(sat,name); /*[bug]when two or more invalid sat are pick out, 'var' will be overwrited by the last one */
         trace(2,"%s: %s excluded by raim\n",tstr+11,name);
     }
     free(obs_e);
@@ -500,7 +508,9 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
     free(svh_e); free(vsat_e); free(resp_e);
     return stat;
 }
-/* doppler residuals ---------------------------------------------------------*/
+/* doppler residuals ----------------------------------------------------------
+ * args :   double*     rr      I   rov {x,y,z,vx,vy,vz} or or {e,n,u,ve,vn,vu}
+ * --------------------------------------------------------------------------*/
 static int resdop(const obsd_t *obs, int n, const double *rs, const double *dts,
                   const nav_t *nav, const double *rr, const double *x,
                   const double *azel, const int *vsat, double *v, double *H)
@@ -510,13 +520,15 @@ static int resdop(const obsd_t *obs, int n, const double *rs, const double *dts,
     
     trace(3,"resdop  : n=%d\n",n);
     
-    ecef2pos(rr,pos); xyz2enu(pos,E);
+    ecef2pos(rr,pos);
+    xyz2enu(pos,E); /*this function name is misleading; E is the transform matrix to enu*/
     
     for (i=0;i<n&&i<MAXOBS;i++) {
         
         lam=nav->lam[obs[i].sat-1][0];
         
-        if (obs[i].D[0]==0.0||lam==0.0||!vsat[i]||norm(rs+3+i*6,3)<=0.0) {
+        if (obs[i].D[0]==0.0||lam==0.0||!vsat[i]||
+            norm(rs+3+i*6,3)<=0.0) {/*lack of sat vel*/
             continue;
         }
         /* line-of-sight vector in ecef */
@@ -624,8 +636,8 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     /* 2. estimate receiver position with pseudorange */
     stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
     
-    /* 3. raim fde */
-    if (!stat&&n>=6&&opt->posopt[4]) {
+    /* 3. if failed to positioning, then do raim fde */
+    if (!stat && n>=6 && opt->posopt[4]) { /* opt->posopt[4]: gui check flag for raim fde, see rtkpost/rtknavi option gui */
         stat=raim_fde(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
     }
     /* 4. estimate receiver velocity with doppler */

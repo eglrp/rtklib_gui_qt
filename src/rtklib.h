@@ -1090,7 +1090,7 @@ typedef struct {        /* processing options type */
     int  initrst;       /* initialize by restart */
     int  outsingle;     /* output single by dgps/float/fix/ppp outage */
     char rnxopt[2][256]; /* rinex options {rover,base} */
-    int  posopt[6];     /* positioning options */
+    int  posopt[6];     /* positioning options: see rtkpost option GUI, 0-5:{satPCV,recPCV,phWU,rejEcl,RAIM_FDE,BDCorr} */
     int  syncsol;       /* solution sync mode (0:off,1:on) */
     double odisp[2][6*11]; /* ocean tide loading parameters {rov,base} */
     exterr_t exterr;    /* extended receiver error model */
