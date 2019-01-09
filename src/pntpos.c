@@ -322,7 +322,8 @@ static int  rescode(int iter, const obsd_t *obs, int n, const double *rs,
     }
     return nv;
 }
-/* validate solution ---------------------------------------------------------*/
+/* validate solution -----------------------------------------------------------
+* return:  0:failed, 1: ok----------------------------------------------------*/
 static int valsol(const double *azel, const int *vsat, int n,
                   const prcopt_t *opt, const double *v, int nv, int nx,
                   char *msg)
@@ -354,6 +355,8 @@ static int valsol(const double *azel, const int *vsat, int n,
 }
 /* estimate receiver position -------------------------------------------------
 * args  : int   n       I   number of observation
+*         int   vare    I   var of orbit
+* return:  0:failed, 1: ok
 *----------------------------------------------------------------------------*/
 static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                   const double *vare, const int *svh, const nav_t *nav,
@@ -441,7 +444,7 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
     
     for (i=0;i<n;i++) {
         
-        /* satellite exclution */
+        /* satellite exclution: exclude a sat in obs[i] */
         for (j=k=0;j<n;j++) {
             if (j==i) continue;
             obs_e[k]=obs[j];
@@ -456,6 +459,8 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
             trace(3,"raim_fde: exsat=%2d (%s)\n",obs[i].sat,msg);
             continue;
         }
+
+        /* compute rms_e */
         for (j=nvsat=0,rms_e=0.0;j<n-1;j++) {
             if (!vsat_e[j]) continue;
             rms_e+=SQR(resp_e[j]);
@@ -483,7 +488,7 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
         *sol=sol_e;
         sat=obs[i].sat;
         rms=rms_e;
-        vsat[i]=0;
+        vsat[i]=0;/* sat validation flag: 0=invalid, 1=valid */
         strcpy(msg,msg_e);
     }
     if (stat) {
