@@ -122,6 +122,7 @@ static double prange(const obsd_t *obs, const nav_t *nav, const double *azel,
     
     *var=SQR(ERR_CBIAS);
     
+
     return PC;
 }
 /* ionospheric correction ------------------------------------------------------
@@ -357,8 +358,13 @@ static int valsol(const double *azel, const int *vsat, int n,
     return 1;
 }
 /* estimate receiver position -------------------------------------------------
-* args  : int   n       I   number of observation
-*         int   vare    I   var of orbit
+* args  : int       n       I   number of observation
+*         int       vare    I   var of orbit
+*         sol_t*    sol     IO  solution of rov
+*         double*   azel    IO  {az,el}
+*         int*      vsat    IO  valid flag of every sat
+*         double*   resp    IO  residual of every obs(include excluded sat,resp=0.0)
+*         char*     msg     IO  error msg
 * return:  0:failed, 1: ok
 *----------------------------------------------------------------------------*/
 static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
@@ -451,7 +457,7 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
     svh_e=imat(1,n); vsat_e=imat(1,n); resp_e=mat(1,n); 
     
     for (i=0;i<n;i++) { 
-        /* satellite exclution */
+        /* 1.satellite exclution */
         for (j=k=0;j<n;j++) {
             if (j==i) continue; /*exclude a sat in obs[i]*/
             obs_e[k]=obs[j];
@@ -460,14 +466,14 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
             vare_e[k]=vare[j];
             svh_e[k++]=svh[j];
         }
-        /* estimate receiver position without a satellite */
+        /* 2.estimate receiver position without a satellite */
         if (!estpos(obs_e,n-1,rs_e,dts_e,vare_e,svh_e,nav,opt,&sol_e,azel_e,
                     vsat_e,resp_e,msg_e)) { /* means gross error(s) is/are still amid the rest observations */
             trace(3,"raim_fde: exsat=%2d (%s)\n",obs[i].sat,msg);
             continue;
         }
 
-        /* compute rms_e */
+        /* 3.compute rms_e */
         for (j=nvsat=0,rms_e=0.0;j<n-1;j++) {
             if (!vsat_e[j]) continue;
             rms_e+=SQR(resp_e[j]);
@@ -482,10 +488,12 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
         
         trace(3,"raim_fde: exsat=%2d rms=%8.3f\n",obs[i].sat,rms_e);
         
+
+        /* 4.compare rms after exclution */
         if (rms_e>rms) continue; /* That rms do not improve means a valid sat is excluded but invalid one */
         else{ /*raim fde have found an invalid sat*/}
 
-        /* save result */
+        /* 5.save result */
         for (j=k=0;j<n;j++) {
             if (j==i) continue;
             matcpy(azel+2*j,azel_e+2*k,2,1);
