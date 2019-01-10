@@ -1868,7 +1868,7 @@ extern void rtkfree(rtk_t *rtk)
 *          obsd_t *obs      I   observation data for an epoch
 *------------------------------>obs[i].rcv=1:rover,2:reference<-----------------|
 *                               sorted by receiver and satellte
-*          int    n         I   number of observation data
+*          int    n         I   number of observation data (n=n_obs_rov+n_obs_ref)
 *          nav_t  *nav      I   navigation messages
 * return : status (0:no solution,1:valid solution)
 * notes  : before calling function, base station position rtk->sol.rb[] should
@@ -1887,23 +1887,24 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     /*trace(5,"nav=\n"); tracenav(5,nav);*/
     
     /* set base staion position */
-    if (opt->refpos <= POSOPT_RINEX &&
-		opt->mode   != PMODE_SINGLE &&
-        opt->mode   != PMODE_MOVEB) {
+    if (opt->refpos <= POSOPT_RINEX && /* these modes: ref approximate cooridinates are known */
+        opt->mode   != PMODE_SINGLE && /* PMODE_SINGLE: no ref                                */
+        opt->mode   != PMODE_MOVEB) {  /* PMODE_MOVEB: ref is also moving                     */
         for (i=0;i<6;i++) 
 			rtk->rb[i]=i<3?opt->rb[i]:0.0;
     }
-    /* count rover/base station observations */
+
+    /* count rover/base station observations, see rtksvrthread(), obs of rov sorted ahead of that of ref */
     for (nu=0;nu   <n&&obs[nu   ].rcv==1;nu++) ;
     for (nr=0;nu+nr<n&&obs[nu+nr].rcv==2;nr++) ;
     
     time=rtk->sol.time; /* previous epoch */
     
-    /* rover position by single point positioning */
+    /* 1.rover position by single point positioning */
     if (!pntpos(obs,nu,nav,&rtk->opt,&rtk->sol,NULL,rtk->ssat,msg)) {
         errmsg(rtk,"point pos error (%s)\n",msg);
         
-        if (!rtk->opt.dynamics) {
+        if (!rtk->opt.dynamics) { /* (0:none,1:velociy,2:accel) */
             outsolstat(rtk);
             return 0;
         }
@@ -1911,15 +1912,16 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     if (time.time!=0) 
 		rtk->tt=timediff(rtk->sol.time,time);
     
-    /* single point positioning */
+    /* 2.spp mode: output and return  */
     if (opt->mode==PMODE_SINGLE) {
         outsolstat(rtk);
         return 1;
     }
     /* suppress output of single solution */
-    if (!opt->outsingle) {
+    if (!opt->outsingle) { /* [q] */
         rtk->sol.stat=SOLQ_NONE;
     }
+
     /* precise point positioning */
     if (opt->mode>=PMODE_PPP_KINEMA) {
         pppos(rtk,obs,nu,nav);

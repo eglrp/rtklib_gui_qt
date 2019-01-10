@@ -337,13 +337,13 @@ static int valsol(const double *azel, const int *vsat, int n,
     
     trace(3,"valsol  : n=%d nv=%d\n",n,nv);
     
-    /* chi-square validation of residuals */
+    /* 1.chi-square validation of residuals */
     vv=dot(v,v,nv);
     if (nv>nx&&vv>chisqr[nv-nx-1]) {
         sprintf(msg,"chi-square error nv=%d vv=%.1f cs=%.1f",nv,vv,chisqr[nv-nx-1]);
         return 0;
     }
-    /* large gdop check */
+    /* 2.large gdop check */
     for (i=ns=0;i<n;i++) {
         if (!vsat[i]) continue;
         azels[  ns*2]=azel[  i*2];
@@ -405,7 +405,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
         
         if (norm(dx,NX)<1E-4) {
             sol->type=0; /* 0: xyz, 1: enu */
-            sol->time=timeadd(obs[0].time,-x[3]/CLIGHT); /* note that: for clk, x[3] is error while -x[3] is correction */
+            sol->time=timeadd(obs[0].time,-x[3]/CLIGHT); /* x[3] is error while -x[3] is correction */
             sol->dtr[0]=x[3]/CLIGHT; /* receiver clock bias (s) */
             sol->dtr[1]=x[4]/CLIGHT; /* ISB: glo-gps time offset (s) */
             sol->dtr[2]=x[5]/CLIGHT; /* ISB: gal-gps time offset (s) */

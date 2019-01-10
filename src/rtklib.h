@@ -536,7 +536,7 @@ typedef struct {        /* time struct : expand the integer type 'time' to 'floa
 
 typedef struct {        /* observation data record: for one sat-rcv pair */
     gtime_t time;       /* receiver sampling time (GPST), i.e. GPST is time reference */
-    unsigned char sat,rcv; /* satellite/receiver number */
+    unsigned char sat,rcv; /* satellite[0~MAXSAT-1]/receiver number{1:rov, 2:ref},see rtkpos() */
     unsigned char SNR [NFREQ+NEXOBS]; /* signal strength (0.25 dBHz) */
     unsigned char LLI [NFREQ+NEXOBS]; /* loss of lock indicator */
     unsigned char code[NFREQ+NEXOBS]; /* code indicator (CODE_???) */
@@ -917,7 +917,7 @@ typedef struct {        /* station parameter type */
 } sta_t;
 
 typedef struct {        /* solution (one epoch) type: pos + vel + corvariance */
-    gtime_t time;       /* time (GPST) */
+    gtime_t time;       /* time (GPST): time of obs reception time(include rcv clk correction) */
     double rr[6];       /* position/velocity (m|m/s) */
                         /* {x,y,z,vx,vy,vz} or {e,n,u,ve,vn,vu} */
     float  qr[6];       /* position variance/covariance (m^2) */

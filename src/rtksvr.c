@@ -436,7 +436,7 @@ static void corr_phase_bias(obsd_t *obs, int n, const nav_t *nav)
     
     for (i=0;i<n;i++) for (j=0;j<NFREQ;j++) {
         
-        if (!(code=obs[i].code[j])) continue;
+        if (!(code=obs[i].code[j])) continue; /* CODE_NONE */
         if ((lam=nav->lam[obs[i].sat-1][j])==0.0) continue;
         
         /* correct phase bias (cyc) */
@@ -557,7 +557,7 @@ static void *rtksvrthread(void *arg)
     ticknmea=tick1hz=svr->tick-1000;
     tickreset=svr->tick-MIN_INT_RESET;
     
-    for (cycle=0;svr->state;cycle++) { /* stop when svr->state==0 */
+    for (cycle=0;svr->state;cycle++) { /* server loop stop when svr->state==0 */
         tick=tickget();
         
         /* 1.read stream */
@@ -599,12 +599,11 @@ static void *rtksvrthread(void *arg)
         if (fobs[1]>0&& /* index 1: ref station */
             svr->rtk.opt.refpos==POSOPT_SINGLE) {
             if ((svr->rtk.opt.maxaveep<=0||svr->nave<svr->rtk.opt.maxaveep)&&
-                 /* only use the first epoch for positioning */
-                 pntpos(svr->obs[1][0].data, svr->obs[1][0].n, &svr->nav,
+                /* only use the first epoch for positioning */
+                pntpos(svr->obs[1][0].data, svr->obs[1][0].n, &svr->nav,
                        &svr->rtk.opt, &sol, NULL, NULL, msg)) {
                 svr->nave++;
                 for (i=0;i<3;i++) {
-                    /* sol: solution after pntpos */
                     svr->rb_ave[i]+=(sol.rr[i]-svr->rb_ave[i])/svr->nave;
                 }
             }
@@ -612,11 +611,11 @@ static void *rtksvrthread(void *arg)
         }/* 3.averaging single base pos */
 
 
-        for (i=0;i<fobs[0];i++) {
-            /* retrieve obs from svr->obs to temp varible obs
-             *  i:                  index for epoch
-             *  svr->obs[0][i]:     rov obs at epoch i
-             *  svr->obs[0][i]:     ref obs at epoch i       */
+        for (i=0;i<fobs[0];i++) { /* epoch loop:  i:index for epoch */
+            /* 3.1 retrieve obs from svr->obs to temp varible obs
+             *      svr->obs[0][i]:     rov obs at epoch i
+             *      svr->obs[0][i]:     ref obs at epoch i
+             *      temp obs for one epoch                      */
             obs.n=0;
             for (j=0;j<svr->obs[0][i].n&&obs.n<MAXOBS*2;j++) {
                 obs.data[obs.n++]=svr->obs[0][i].data[j];
@@ -625,21 +624,21 @@ static void *rtksvrthread(void *arg)
                 obs.data[obs.n++]=svr->obs[1][0].data[j];
             }/* retrieve obs from svr->obs to temp varible obs */
 
-            /* carrier phase bias correction */
-            if (!strstr(svr->rtk.opt.pppopt,"-DIS_FCB")) {
+            /* 3.2 carrier phase bias correction */
+            if (!strstr(svr->rtk.opt.pppopt,"-DIS_FCB")) { /* "-DIS_FCB": diss fcb correction */
                 corr_phase_bias(obs.data,obs.n,&svr->nav);
             }
-            /* rtk positioning */
+            /* 3.3 rtk positioning */
             rtksvrlock(svr);
             rtkpos(&svr->rtk,obs.data,obs.n,&svr->nav);
             rtksvrunlock(svr);
             
             if (svr->rtk.sol.stat!=SOLQ_NONE) {
-                /* adjust current time */
+                /* 3.4 adjust current time */
                 tt=(int)(tickget()-tick)/1000.0+DTTOL;
                 timeset(gpst2utc(timeadd(svr->rtk.sol.time,tt)));
                 
-                /* write solution */
+                /* 3.5 write solution */
                 writesol(svr,i);
             }
             /* if cpu overload, inclement obs outage counter and break */
@@ -649,7 +648,8 @@ static void *rtksvrthread(void *arg)
                 break;
 #endif
             }
-        }
+        }/* epoch loop:  i:index for epoch */
+
         /* send null solution if no solution (1hz) */
         if (svr->rtk.sol.stat==SOLQ_NONE&&(int)(tick-tick1hz)>=1000) {
             writesol(svr,0);
@@ -668,7 +668,7 @@ static void *rtksvrthread(void *arg)
         
         /* sleep until next cycle */
         sleepms(svr->cycle-cputime);
-    }/* stop when svr->state==0 */
+    }/* server loop: stop when svr->state==0 */
 
     for (i=0;i<MAXSTRRTK;i++) strclose(svr->stream+i);
     for (i=0;i<3;i++) {
