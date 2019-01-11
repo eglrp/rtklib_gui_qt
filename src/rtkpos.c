@@ -1900,7 +1900,7 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     
     time=rtk->sol.time; /* previous epoch */
     
-    /* 1.rover position by single point positioning */
+    /* 1.get rov appoxi pos by SPP */
     if (!pntpos(obs,nu,nav,&rtk->opt,&rtk->sol,NULL,rtk->ssat,msg)) {
         errmsg(rtk,"point pos error (%s)\n",msg);
         
@@ -1912,60 +1912,65 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     if (time.time!=0) 
 		rtk->tt=timediff(rtk->sol.time,time);
     
-    /* 2.spp mode: output and return  */
+    /* 2.SPP */
     if (opt->mode==PMODE_SINGLE) {
         outsolstat(rtk);
         return 1;
     }
+
     /* suppress output of single solution */
-    if (!opt->outsingle) { /* [q] */
+    if (!opt->outsingle) { /* due to result for PMODE_SINGLE is output, and for the rest mode, SOLQ_SINGLE is regarded as SOLQ_NONE */
         rtk->sol.stat=SOLQ_NONE;
     }
 
-    /* precise point positioning */
+    /* 3.PPP */
     if (opt->mode>=PMODE_PPP_KINEMA) {
         pppos(rtk,obs,nu,nav);
         outsolstat(rtk);
-        return 1;
+        return 1; /* for PPP, if SPP is failed also return 1? or this case is impossible? */
     }
 
-	/* relative positioning mode */
-    /* check number of data of base station and age of differential */
+    /* 4.RTK */
+    /* 4.1 check number of data of base station */
     if (nr==0) {
         errmsg(rtk,"no base station observation data for rtk\n");
         outsolstat(rtk);
         return 1;
     }
 	
-    if (opt->mode==PMODE_MOVEB) { /* moving baseline */
+    /* 4.2 check diff_age: diff_age = time_ref - time_rov --------------------
+     * note that: threshold of diff_age is different in two mode:
+     *      moving_base     : TTOL_MOVEB
+     *      non_moving_base : opt->maxtdiff (specified by option/GUI) ------*/
+    if (opt->mode==PMODE_MOVEB) { /* moving baseline: pos of ref is also changing, so need estimate and vel-correction */
         
-        /* estimate position/velocity of base station */
+        /* 1) estimate position/velocity of base station */
         if (!pntpos(obs+nu,nr,nav,&rtk->opt,&solb,NULL,NULL,msg)) {
             errmsg(rtk,"base station position error (%s)\n",msg);
             return 0;
         }
+
+        /* 2) check diff-age */
         rtk->sol.age=(float)timediff(rtk->sol.time,solb.time);
-        
         if (fabs(rtk->sol.age)>TTOL_MOVEB) {
             errmsg(rtk,"time sync error for moving-base (age=%.1f)\n",rtk->sol.age);
             return 0;
         }
         for (i=0;i<6;i++) rtk->rb[i]=solb.rr[i];
         
-        /* time-synchronized position of base station */
+        /* 3) ref vel-correction */
         for (i=0;i<3;i++) 
 			rtk->rb[i]+=rtk->rb[i+3]*rtk->sol.age; /* correct pos by adding velocity * age_time */
     }
     else {
         rtk->sol.age=(float)timediff(obs[0].time,obs[nu].time);
-        
         if (fabs(rtk->sol.age)>opt->maxtdiff) {
             errmsg(rtk,"age of differential error (age=%.1f)\n",rtk->sol.age);
             outsolstat(rtk);
             return 1;
         }
     }
-    /* relative potitioning */
+    /* 4.3 relative potitioning */
     relpos(rtk,obs,nu,nr,nav);
     outsolstat(rtk);
     

@@ -615,7 +615,7 @@ static void *rtksvrthread(void *arg)
             /* 3.1 retrieve obs from svr->obs to temp varible obs
              *      svr->obs[0][i]:     rov obs at epoch i
              *      svr->obs[0][i]:     ref obs at epoch i
-             *      temp obs for one epoch                      */
+             *      temp obs for one epoch                          */
             obs.n=0;
             for (j=0;j<svr->obs[0][i].n&&obs.n<MAXOBS*2;j++) {
                 obs.data[obs.n++]=svr->obs[0][i].data[j];

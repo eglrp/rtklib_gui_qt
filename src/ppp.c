@@ -485,7 +485,7 @@ static void udpos_ppp(rtk_t *rtk)
     
     /* fixed mode */
     if (rtk->opt.mode==PMODE_PPP_FIXED) {
-        for (i=0;i<3;i++) initx(rtk,rtk->opt.ru[i],1E-8,i);
+        for (i=0;i<3;i++) initx(rtk,rtk->opt.ru[i],1E-8,i); /* third parameter: var=1E-8 */
         return;
     }
     /* initialize position for first epoch */
@@ -1145,7 +1145,12 @@ static int test_hold_amb(rtk_t *rtk)
     /* test # of continuous fixed */
     return ++rtk->nfix>=rtk->opt.minfix;
 }
-/* precise point positioning -------------------------------------------------*/
+/* precise point positioning -------------------------------------------------
+ * args:    rtk_t*      rtk     IO
+ *          obs_t*      obs     obs of rov in one epoch
+ *          int         n       # of obs
+ *          nav_t*      nav     ephmeris
+ * -------------------------------------------------------------------------*/
 extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
 {
     const prcopt_t *opt=&rtk->opt;
@@ -1156,14 +1161,16 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     time2str(obs[0].time,str,2);
     trace(3,"pppos   : time=%s nx=%d n=%d\n",str,rtk->nx,n);
     
-    rs=mat(6,n); dts=mat(2,n); var=mat(1,n); azel=zeros(2,n);
+    /* all below matrixs are transposed:                                        */
+    /* sat_pos      sal_clk{bias,drift}     obs_var         sight_vector_azel   */
+    rs=mat(6,n);    dts=mat(2,n);           var=mat(1,n);   azel=zeros(2,n);
     
-    for (i=0;i<MAXSAT;i++) for (j=0;j<opt->nf;j++) rtk->ssat[i].fix[j]=0;
+    for (i=0;i<MAXSAT;i++) for (j=0;j<opt->nf;j++) rtk->ssat[i].fix[j]=0; /* reset sat fix flag */
     
-    /* temporal update of ekf states */
+    /* 1.temporal update of ekf states (ekf:expanded kalman filter) */
     udstate_ppp(rtk,obs,n,nav);
     
-    /* satellite positions and clocks */
+    /* 2.satellite positions and clocks */
     satposs(obs[0].time,obs,n,nav,rtk->opt.sateph,rs,dts,var,svh);
     
     /* exclude measurements of eclipsing satellite (block IIA) */
@@ -1172,8 +1179,7 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     }
     /* earth tides correction */
     if (opt->tidecorr) {
-        tidedisp(gpst2utc(obs[0].time),rtk->x,opt->tidecorr==1?1:7,&nav->erp,
-                 opt->odisp[0],dr);
+        tidedisp(gpst2utc(obs[0].time),rtk->x,opt->tidecorr==1?1:7,&nav->erp,opt->odisp[0],dr);
     }
     nv=n*rtk->opt.nf*2+MAXSAT+3;
     xp=mat(rtk->nx,1); Pp=zeros(rtk->nx,rtk->nx);
