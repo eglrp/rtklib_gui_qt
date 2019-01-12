@@ -1777,6 +1777,7 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
 *-----------------------------------------------------------------------------*/
 extern void rtkinit(rtk_t *rtk, const prcopt_t *opt)
 {
+    /* what the different between the number of bracket */
     sol_t sol0={{0}};
     ambc_t ambc0={{{0}}};
     ssat_t ssat0={0};
@@ -1786,7 +1787,8 @@ extern void rtkinit(rtk_t *rtk, const prcopt_t *opt)
     
     rtk->sol=sol0;
     for (i=0;i<6;i++) rtk->rb[i]=0.0;
-    rtk->nx=opt->mode<=PMODE_FIXED?NX(opt):pppnx(opt);
+    rtk->nx=opt->mode<=PMODE_FIXED?NX(opt):pppnx(opt); /* [***]the scopes of macro NX here and NX in pppnx are different */
+                 /* process mode  ?  rtk  :  ppp   */
     rtk->na=opt->mode<=PMODE_FIXED?NR(opt):pppnx(opt);
     rtk->tt=0.0;
     rtk->x=zeros(rtk->nx,1);

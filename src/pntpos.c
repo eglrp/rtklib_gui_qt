@@ -55,7 +55,8 @@ static double gettgd(int sat, const nav_t *nav)
 }
 /* psendorange with code bias correction --------------------------------------
 * args: int     iter    I   iteration index
-* note that:
+* note that: only IONOOPT_IFLC option use double-freq psedorange obs,
+* the rest are all regarded as single-freq obs and only P1 is used.
 *----------------------------------------------------------------------------*/
 static double prange(const obsd_t *obs, const nav_t *nav, const double *azel,
                      int iter, const prcopt_t *opt, double *var)
@@ -86,7 +87,8 @@ static double prange(const obsd_t *obs, const nav_t *nav, const double *azel,
             return 0.0;
         }
 
-        if (opt->ionoopt==IONOOPT_IFLC) { /* why need to test j_freq SNR again in this case? */
+        if (opt->ionoopt==IONOOPT_IFLC) {
+            /* note that: snr test is independent between freq and LC use both freq obs, so both freq need test */
             if (testsnr(0,j,azel[1],obs->SNR[j]*0.25,&opt->snrmask)) return 0.0;
         }
     }
@@ -112,7 +114,7 @@ static double prange(const obsd_t *obs, const nav_t *nav, const double *azel,
         /* iono-free combination: elegancy */
         PC=(gamma*P1-P2)/(gamma-1.0);
     }
-    else { /* single-frequency: use psudorange in L1 */
+    else { /* single-frequency: obs with non-IONOOPT_IFLC options are all regarded as single-freq, and only use P1 */
         if (P1==0.0) return 0.0;
         if (obs->code[i]==CODE_L1C) P1+=P1_C1; /* C1->P1 */
         PC=P1-P1_P2/(1.0-gamma); /* P1_p2=-(d^s_1-d^s_2), dt^s_IF=dt^s+alpha*d^s_1+beta*d^s_2 */
@@ -121,8 +123,6 @@ static double prange(const obsd_t *obs, const nav_t *nav, const double *azel,
     if (opt->sateph==EPHOPT_SBAS) PC-=P1_C1; /* sbas clock based C1, convert p1 to c1 */
     
     *var=SQR(ERR_CBIAS);
-    
-
     return PC;
 }
 /* ionospheric correction ------------------------------------------------------

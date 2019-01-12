@@ -101,14 +101,14 @@
 
 /* number and index of states */
 #define NF(opt)     ((opt)->ionoopt==IONOOPT_IFLC?1:(opt)->nf)
-#define NP(opt)     ((opt)->dynamics?9:3)
-#define NC(opt)     (NSYS)
+#define NP(opt)     ((opt)->dynamics?9:3) /*dynamics{0=none, [1=vel, 2=accelerate]}, 1&2 can be sorted as one type */
+#define NC(opt)     (NSYS) /* rcv clk */
 #define NT(opt)     ((opt)->tropopt<TROPOPT_EST?0:((opt)->tropopt==TROPOPT_EST?1:3))
 #define NI(opt)     ((opt)->ionoopt==IONOOPT_EST?MAXSAT:0)
-#define ND(opt)     ((opt)->nf>=3?1:0)
+#define ND(opt)     ((opt)->nf>=3?1:0) /* [q]IFB? */
 #define NR(opt)     (NP(opt)+NC(opt)+NT(opt)+NI(opt)+ND(opt))
-#define NB(opt)     (NF(opt)*MAXSAT)
-#define NX(opt)     (NR(opt)+NB(opt))
+#define NB(opt)     (NF(opt)*MAXSAT)    /* # of ambiguity */
+#define NX(opt)     (NR(opt)+NB(opt))   /* # of totle parameter */
 #define IC(s,opt)   (NP(opt)+(s))
 #define IT(opt)     (NP(opt)+NC(opt))
 #define II(s,opt)   (NP(opt)+NC(opt)+NT(opt)+(s)-1)
@@ -332,11 +332,14 @@ static double varerr(int sat, int sys, double el, int freq, int type,
     if (opt->ionoopt==IONOOPT_IFLC) fact*=3.0;
     return SQR(fact*opt->err[1])+SQR(fact*opt->err[2]/sinel);
 }
-/* initialize state and covariance -------------------------------------------*/
+/* initialize state and covariance --------------------------------------------
+ * note: correlation between states will be ignored -------------------------*/
 static void initx(rtk_t *rtk, double xi, double var, int i)
 {
     int j;
+    /* 1.states */
     rtk->x[i]=xi;
+    /* 2.variance: ignore correlation between states */
     for (j=0;j<rtk->nx;j++) {
         rtk->P[i+j*rtk->nx]=rtk->P[j+i*rtk->nx]=i==j?var:0.0;
     }
@@ -483,12 +486,14 @@ static void udpos_ppp(rtk_t *rtk)
     
     trace(3,"udpos_ppp:\n");
     
-    /* fixed mode */
+    /* fixed mode: rov coordinates are accurately known */
     if (rtk->opt.mode==PMODE_PPP_FIXED) {
-        for (i=0;i<3;i++) initx(rtk,rtk->opt.ru[i],1E-8,i); /* third parameter: var=1E-8 */
+        for (i=0;i<3;i++) initx(rtk,rtk->opt.ru[i],1E-8,i);
         return;
     }
-    /* initialize position for first epoch */
+
+    /* mode != PMODE_PPP_FIXED */
+    /* first epoch: initialize position */
     if (norm(rtk->x,3)<=0.0) {
         for (i=0;i<3;i++) initx(rtk,rtk->sol.rr[i],VAR_POS,i);
         if (rtk->opt.dynamics) {
@@ -496,13 +501,17 @@ static void udpos_ppp(rtk_t *rtk)
             for (i=6;i<9;i++) initx(rtk,1E-6,VAR_ACC,i);
         }
     }
+
+    /* after first epoch: add process noise */
     /* static ppp mode */
     if (rtk->opt.mode==PMODE_PPP_STATIC) {
         for (i=0;i<3;i++) {
-            rtk->P[i*(1+rtk->nx)]+=SQR(rtk->opt.prn[5])*fabs(rtk->tt);
+            /* static mode: F=I, so x_k=x_(k-1), P=I*P*I'+Q */
+            rtk->P[i*(1+rtk->nx)]+=SQR(rtk->opt.prn[5])*fabs(rtk->tt); /* Pxx,Pyy,Pzz */
         }
         return;
     }
+
     /* kinmatic mode without dynamics */
     if (!rtk->opt.dynamics) {
         for (i=0;i<3;i++) {
@@ -510,7 +519,8 @@ static void udpos_ppp(rtk_t *rtk)
         }
         return;
     }
-    /* generate valid state index */
+    /* kinmatic mode with dynamics */
+    /* generate valid state index: ix[rtk->nx][1] */
     ix=imat(rtk->nx,1);
     for (i=nx=0;i<rtk->nx;i++) {
         if (rtk->x[i]!=0.0&&rtk->P[i+i*rtk->nx]>0.0) ix[nx++]=i;
@@ -519,35 +529,45 @@ static void udpos_ppp(rtk_t *rtk)
         free(ix);
         return;
     }
-    /* state transition of position/velocity/acceleration */
+    /* state transition of position/velocity/acceleration note that:
+     * elements of F are sorted in col order                            */
     F=eye(nx); P=mat(nx,nx); FP=mat(nx,nx); x=mat(nx,1); xp=mat(nx,1);
-    
     for (i=0;i<6;i++) {
         F[i+(i+3)*nx]=rtk->tt;
     }
     for (i=0;i<3;i++) {
         F[i+(i+6)*nx]=SQR(rtk->tt)/2.0;
     }
+
+    /* indexing: {rtk->x, rtk->P} to {x, P}                        */
     for (i=0;i<nx;i++) {
-        x[i]=rtk->x[ix[i]];
+        x[i]=rtk->x[ix[i]]; /* use index to valid state parameters */
         for (j=0;j<nx;j++) {
             P[i+j*nx]=rtk->P[ix[i]+ix[j]*rtk->nx];
         }
     }
+
     /* x=F*x, P=F*P*F+Q */
-    matmul("NN",nx,1,nx,1.0,F,x,0.0,xp);
-    matmul("NN",nx,nx,nx,1.0,F,P,0.0,FP);
-    matmul("NT",nx,nx,nx,1.0,FP,F,0.0,P);
+    /* 1) predict x=F*x */
+    matmul("NN",nx, 1,nx,1.0, F,x,0.0,xp);
+
+    /* 2.1) predict FPF' */
+    matmul("NN",nx,nx,nx,1.0, F,P,0.0,FP);
+    matmul("NT",nx,nx,nx,1.0,FP,F,0.0, P);
     
+    /* update x_(k-1) with x_k_predict:
+     * indexing: {x, P} to  {rtk->x, rtk->P} */
     for (i=0;i<nx;i++) {
         rtk->x[ix[i]]=xp[i];
         for (j=0;j<nx;j++) {
             rtk->P[ix[i]+ix[j]*rtk->nx]=P[i+j*nx];
         }
     }
-    /* process noise added to only acceleration */
-    Q[0]=Q[4]=SQR(rtk->opt.prn[3])*fabs(rtk->tt);
-    Q[8]=SQR(rtk->opt.prn[4])*fabs(rtk->tt);
+    /* 2.2) predict P=FPF'+Q: process noise added to only var and co-var of acceleration
+     * note that: Q[9] is acctually a submatrix of Q for acceleration parameters
+     * and Q[9]=Q[3][3]                                                                  */
+    Q[0]=Q[4]=SQR(rtk->opt.prn[3])*fabs(rtk->tt);   /* Q[0]:E, Q[4]:N   */
+    Q[8]=SQR(rtk->opt.prn[4])*fabs(rtk->tt);        /* Q[8]:U           */
     ecef2pos(rtk->x,pos);
     covecef(pos,Q,Qv);
     for (i=0;i<3;i++) for (j=0;j<3;j++) {
@@ -1185,7 +1205,7 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     xp=mat(rtk->nx,1); Pp=zeros(rtk->nx,rtk->nx);
     v=mat(nv,1); H=mat(rtk->nx,nv); R=mat(nv,nv);
     
-    for (i=0;i<MAX_ITER;i++) {
+    for (i=0;i<MAX_ITER;i++) {/* iteration */
         
         matcpy(xp,rtk->x,rtk->nx,1);
         matcpy(Pp,rtk->P,rtk->nx,rtk->nx);
@@ -1210,7 +1230,8 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     }
     if (i>=MAX_ITER) {
         trace(2,"%s ppp (%d) iteration overflows\n",str,i);
-    }
+    }/* iteration */
+
     if (stat==SOLQ_PPP) {
         
         /* ambiguity resolution in ppp */
