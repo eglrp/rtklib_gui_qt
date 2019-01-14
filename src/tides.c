@@ -209,10 +209,10 @@ static void tide_pole(gtime_t tut, const double *pos, const double *erpv,
 * args   : gtime_t tutc     I   time in utc
 *          double *rr       I   site position (ecef) (m)
 *          int    opt       I   options (or of the followings)
-*                                 1: solid earth tide
-*                                 2: ocean tide loading
-*                                 4: pole tide
-*                                 8: elimate permanent deformation
+*                               set bit0, i.e. 0x0001=1: solid earth tide
+*                               set bit1, i.e. 0x0010=2: ocean tide loading
+*                               set bit2, i.e. 0x0100=4: pole tide
+*                               set bit3, i.e. 0x1000=8: elimate permanent deformation [prerequisite bit0]
 *          double *erp      I   earth rotation parameters (NULL: not used)
 *          double *odisp    I   ocean loading parameters  (NULL: not used)
 *                                 odisp[0+i*6]: consituent i amplitude radial(m)
@@ -270,7 +270,7 @@ extern void tidedisp(gtime_t tutc, const double *rr, int opt, const erp_t *erp,
         /* call DEHANTTIDEINEL */
         dehanttideinel_((double *)rr,&year,&mon,&day,&fhr,rs,rm,drt);
 #else
-        tide_solid(rs,rm,pos,E,gmst,opt,drt);
+        tide_solid(rs,rm,pos,E,gmst,opt,drt); /* this function will check bit3*/
 #endif
         for (i=0;i<3;i++) dr[i]+=drt[i];
     }

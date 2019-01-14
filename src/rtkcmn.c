@@ -3677,7 +3677,7 @@ static double interpvar(double ang, const double *var)
 /* receiver antenna model ------------------------------------------------------
 * compute antenna offset by antenna phase center parameters
 * args   : pcv_t *pcv       I   antenna phase center parameters
-*          double *         I   antenna delta {e, n, u}
+*          double *del      I   antenna delta {e, n, u}
 *          double *azel     I   azimuth/elevation for receiver {az,el} (rad)
 *          int     opt      I   option (0:only offset,1:offset+pcv)
 *          double *dant     O   range offsets for each frequency (m)
@@ -3697,8 +3697,9 @@ extern void antmodel(const pcv_t *pcv, const double *del, const double *azel,
     e[2]=sin(azel[1]);
     
     for (i=0;i<NFREQ;i++) {
-        for (j=0;j<3;j++) off[j]=pcv->off[i][j]+del[j];
+        for (j=0;j<3;j++) off[j]=pcv->off[i][j]+del[j]; /* PCO + ant_delta */
         
+        /*dot(off,e,3): project PCV vector to the direction of sat-rcv sight vector */
         dant[i]=-dot(off,e,3)+(opt?interpvar(90.0-azel[1]*R2D,pcv->var[i]):0.0);
     }
     trace(5,"antmodel: dant=%6.3f %6.3f\n",dant[0],dant[1]);

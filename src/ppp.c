@@ -945,7 +945,10 @@ static int const_corr(const obsd_t *obs, int n, const int *exc,
 /* phase and code residuals --------------------------------------------------
  * 0,obs,n,rs,dts,var,svh,dr,exc,nav,xp,rtk,v,H,R,azel
  * args:    int     post        I       # of iteration
+ *          double* var_rs      I       variance of sat
+ *          double* dr          I       displacement by earth tides (ecef) (m)
  *          int*    exc         IO      flag of excluded sat
+ *          double* x           I       state parameter
  * -------------------------------------------------------------------------*/
 static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                    const double *dts, const double *var_rs, const int *svh,
@@ -967,7 +970,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
     
     for (i=0;i<MAXSAT;i++) for (j=0;j<opt->nf;j++) rtk->ssat[i].vsat[j]=0;
     
-    for (i=0;i<3;i++) rr[i]=x[i]+dr[i];
+    for (i=0;i<3;i++) rr[i]=x[i]+dr[i]; /*earth tide, ocean tide loading, pole tide correction*/
     ecef2pos(rr,pos);
     
     for (i=0;i<n&&i<MAXOBS;i++) {
@@ -990,7 +993,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             !model_iono(obs[i].time,pos,azel+i*2,opt,sat,x,nav,&dion,&vari)) {
             continue;
         }
-        /* satellite and receiver antenna model */
+        /* satellite(optional) and receiver(obligatory) antenna model */
         if (opt->posopt[0]) satantpcv(rs+i*6,rr,nav->pcvs+sat-1,dants);
         antmodel(opt->pcvr,opt->antdel[0],azel+i*2,opt->posopt[1],dantr);
         
@@ -1201,8 +1204,8 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     if (rtk->opt.posopt[3]) {
         testeclipse(obs,n,nav,rs);
     }
-    /* earth tides correction */
-    if (opt->tidecorr) {
+    /* earth tides, otl, pole tide correction */
+    if (opt->tidecorr) {                   /* opt->tidecorr 0:off,1:solid,2:solid+otl+pole */
         tidedisp(gpst2utc(obs[0].time),rtk->x,opt->tidecorr==1?1:7,&nav->erp,opt->odisp[0],dr);
     }
     nv=n*rtk->opt.nf*2+MAXSAT+3;
