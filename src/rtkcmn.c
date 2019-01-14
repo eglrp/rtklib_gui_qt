@@ -521,7 +521,11 @@ extern void satno2id(int sat, char *id)
 *          int    svh       I   sv health flag
 *          prcopt_t *opt    I   processing options (NULL: not used)
 * return : status (1:excluded,0:not excluded)
-* test item: 1) exclude flag in prcopt_t 2) unselected system 3) svh flag 4) ura with in threshold MAX_VAR_EPH
+* test item:
+* 1) exclude flag in prcopt_t
+* 2) unselected system
+* 3) svh flag
+* 4) ura with in threshold MAX_VAR_EPH
 *-----------------------------------------------------------------------------*/
 extern int satexclude(int sat, double var, int svh, const prcopt_t *opt)
 {
@@ -3339,7 +3343,7 @@ extern double satwavelen(int sat, int frq, const nav_t *nav)
             }
         }
         else if (frq==2) { /* L3 */
-            return CLIGHT/FREQ3_GLO;
+            return CLIGHT/FREQ3_GLO; /* G3 is CDMA */
         }
     }
     else if (sys==SYS_CMP) {
@@ -3347,7 +3351,7 @@ extern double satwavelen(int sat, int frq, const nav_t *nav)
         else if (frq==1) return CLIGHT/FREQ2_CMP; /* B2 */
         else if (frq==2) return CLIGHT/FREQ3_CMP; /* B3 */
     }
-    else {
+    else { /* not GLO & CMP */
         if      (frq==0) return CLIGHT/FREQ1; /* L1/E1 */
         else if (frq==1) return CLIGHT/FREQ2; /* L2 */
         else if (frq==2) return CLIGHT/FREQ5; /* L5/E5a */
@@ -3673,6 +3677,7 @@ static double interpvar(double ang, const double *var)
 /* receiver antenna model ------------------------------------------------------
 * compute antenna offset by antenna phase center parameters
 * args   : pcv_t *pcv       I   antenna phase center parameters
+*          double *         I   antenna delta {e, n, u}
 *          double *azel     I   azimuth/elevation for receiver {az,el} (rad)
 *          int     opt      I   option (0:only offset,1:offset+pcv)
 *          double *dant     O   range offsets for each frequency (m)

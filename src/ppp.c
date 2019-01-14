@@ -942,7 +942,11 @@ static int const_corr(const obsd_t *obs, int n, const int *exc,
     }
     return nv;
 }
-/* phase and code residuals --------------------------------------------------*/
+/* phase and code residuals --------------------------------------------------
+ * 0,obs,n,rs,dts,var,svh,dr,exc,nav,xp,rtk,v,H,R,azel
+ * args:    int     post        I       # of iteration
+ *          int*    exc         IO      flag of excluded sat
+ * -------------------------------------------------------------------------*/
 static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                    const double *dts, const double *var_rs, const int *svh,
                    const double *dr, int *exc, const nav_t *nav,
@@ -969,7 +973,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
     for (i=0;i<n&&i<MAXOBS;i++) {
         sat=obs[i].sat;
         lam=nav->lam[sat-1];
-        if (lam[j/2]==0.0||lam[0]==0.0) continue;
+        if (lam[j/2]==0.0||lam[0]==0.0) continue;/* j=opt->nf */
         
         if ((r=geodist(rs+i*6,rr,e))<=0.0||
             satazel(pos,e,azel+i*2)<opt->elmin) {
@@ -977,7 +981,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             continue;
         }
         if (!(sys=satsys(sat,NULL))||!rtk->ssat[sat-1].vs||
-            satexclude(obs[i].sat,var_rs[i],svh[i],opt)||exc[i]) {
+            satexclude(obs[i].sat,var_rs[i],svh[i],opt)||exc[i]) {/* exc[i]=1 : excluded by former iteration */
             exc[i]=1;
             continue;
         }
@@ -1202,11 +1206,10 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
         tidedisp(gpst2utc(obs[0].time),rtk->x,opt->tidecorr==1?1:7,&nav->erp,opt->odisp[0],dr);
     }
     nv=n*rtk->opt.nf*2+MAXSAT+3;
-    xp=mat(rtk->nx,1); Pp=zeros(rtk->nx,rtk->nx);
-    v=mat(nv,1); H=mat(rtk->nx,nv); R=mat(nv,nv);
+    xp=mat(rtk->nx,1);  Pp=zeros(rtk->nx,rtk->nx);
+    v=mat(nv,1);        H=mat(rtk->nx,nv);          R=mat(nv,nv);
     
     for (i=0;i<MAX_ITER;i++) {/* iteration */
-        
         matcpy(xp,rtk->x,rtk->nx,1);
         matcpy(Pp,rtk->P,rtk->nx,rtk->nx);
         

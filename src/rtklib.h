@@ -618,7 +618,7 @@ typedef struct {        /* GPS/QZS/GAL broadcast ephemeris type for *one* sat */
 typedef struct {        /* GLONASS broadcast ephemeris type */
     int sat;            /* satellite number */
     int iode;           /* IODE (0-6 bit of tb field) */
-    int frq;            /* satellite frequency number */
+    int frq;            /* satellite frequency number, yzm: channel number */
     int svh,sva,age;    /* satellite health, accuracy, age of operation */
     gtime_t toe;        /* epoch of epherides (gpst) */
     gtime_t tof;        /* message frame time (gpst) */
