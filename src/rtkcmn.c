@@ -523,9 +523,8 @@ extern void satno2id(int sat, char *id)
 * return : status (1:excluded,0:not excluded)
 * test item:
 * 1) exclude flag in prcopt_t
-* 2) unselected system
-* 3) svh flag
-* 4) ura with in threshold MAX_VAR_EPH
+* 2) sat health: (a)svh; (b)QZSS LEX health
+* 3) ura with in threshold MAX_VAR_EPH
 *-----------------------------------------------------------------------------*/
 extern int satexclude(int sat, double var, int svh, const prcopt_t *opt)
 {
@@ -3696,7 +3695,7 @@ extern void antmodel(const pcv_t *pcv, const double *del, const double *azel,
     e[1]=cos(azel[0])*cosel;
     e[2]=sin(azel[1]);
     
-    for (i=0;i<NFREQ;i++) {
+    for (i=0;i<NFREQ;i++) {/* j: coordinate component: enu or xyz */
         for (j=0;j<3;j++) off[j]=pcv->off[i][j]+del[j]; /* PCO + ant_delta */
         
         /*dot(off,e,3): project PCV vector to the direction of sat-rcv sight vector */

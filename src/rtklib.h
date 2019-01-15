@@ -386,9 +386,9 @@ extern "C" {
 #define TROPOPT_OFF 0                   /* troposphere option: correction off */
 #define TROPOPT_SAAS 1                  /* troposphere option: Saastamoinen model */
 #define TROPOPT_SBAS 2                  /* troposphere option: SBAS model */
-#define TROPOPT_EST 3                   /* troposphere option: ZTD estimation */
-#define TROPOPT_ESTG 4                  /* troposphere option: ZTD+grad estimation */
-#define TROPOPT_ZTD 5                   /* troposphere option: ZTD correction */
+#define TROPOPT_EST 3                   /* troposphere option: ZTD estimation: 1 parameter, see ppp.c NT */
+#define TROPOPT_ESTG 4                  /* troposphere option: ZTD+grad estimation: 3 parameters, see ppp.c NT */
+#define TROPOPT_ZTD 5                   /* troposphere option: ZTD correction: 3 parameters, see ppp.c NT */
 
 #define EPHOPT_BRDC 0                   /* ephemeris option: broadcast ephemeris */
 #define EPHOPT_PREC 1                   /* ephemeris option: precise ephemeris */
@@ -886,7 +886,7 @@ typedef struct {        /* navigation data type */
     int leaps;          /* leap seconds (s) */
     double lam[MAXSAT][NFREQ]; /* carrier wave lengths (m) */
     double cbias[MAXSAT][3]; /* satellite dcb (0:p1-p2,1:p1-c1,2:p2-c2) (m) */
-    double rbias[MAXRCV][2][3]; /* receiver dcb (0:p1-p2,1:p1-c1,2:p2-c2) (m) */
+    double rbias[MAXRCV][2][3]; /* receiver dcb (0:p1-p2,1:p1-c1,2:p2-c2) (m) ,rbias[sat][sys=1:glo, 0:other][dcb_type], see ppp_res() */
     double wlbias[MAXSAT];   /* wide-lane bias (cycle) */
     double glo_cpbias[4];    /* glonass code-phase bias {1C,1P,2C,2P} (m) */
     char glo_fcn[MAXPRNGLO+1]; /* glonass frequency channel number + 8 */
@@ -1179,7 +1179,7 @@ typedef struct {        /* satellite status type */
     double azel[2];     /* azimuth/elevation angles {az,el} (rad) */
     double resp[NFREQ]; /* residuals of pseudorange (m) */
     double resc[NFREQ]; /* residuals of carrier-phase (m) */
-    unsigned char vsat[NFREQ]; /* valid satellite flag */
+    unsigned char vsat[NFREQ]; /* valid satellite flag, 0:invalid, 1=valid */
     unsigned char snr [NFREQ]; /* signal strength (0.25 dBHz) */
     unsigned char fix [NFREQ]; /* ambiguity fix flag (1:fix,2:float,3:hold) */
     unsigned char slip[NFREQ]; /* cycle-slip flag */

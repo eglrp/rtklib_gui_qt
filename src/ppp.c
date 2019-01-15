@@ -99,21 +99,24 @@
 #define T_POSTSHADOW 1800.0         /* post-shadow recovery time (s) */
 #define QZS_EC_BETA 20.0            /* max beta angle for qzss Ec (deg) */
 
-/* number and index of states */
+/* number of states */
 #define NF(opt)     ((opt)->ionoopt==IONOOPT_IFLC?1:(opt)->nf)
 #define NP(opt)     ((opt)->dynamics?9:3) /*dynamics{0=none, [1=vel, 2=accelerate]}, 1&2 can be sorted as one type */
 #define NC(opt)     (NSYS) /* rcv clk */
 #define NT(opt)     ((opt)->tropopt<TROPOPT_EST?0:((opt)->tropopt==TROPOPT_EST?1:3))
 #define NI(opt)     ((opt)->ionoopt==IONOOPT_EST?MAXSAT:0)
-#define ND(opt)     ((opt)->nf>=3?1:0) /* [q]IFB? */
-#define NR(opt)     (NP(opt)+NC(opt)+NT(opt)+NI(opt)+ND(opt))
-#define NB(opt)     (NF(opt)*MAXSAT)    /* # of ambiguity */
+#define ND(opt)     ((opt)->nf>=3?1:0)  /* IFB: inter-freq-bias on the thrid freq */
+#define NB(opt)     (NF(opt)*MAXSAT)    /* # of parameter lump of ambiguity and phase bias */
+/* two kind of state totle number */
+#define NR(opt)     (NP(opt)+NC(opt)+NT(opt)+NI(opt)+ND(opt)) /* state number except ambiguity */
 #define NX(opt)     (NR(opt)+NB(opt))   /* # of totle parameter */
-#define IC(s,opt)   (NP(opt)+(s))
+
+/* index of states */
+#define IC(s,opt)   (NP(opt)+(s))       /* s: sys {1:GLO,2:SYS_GAL,3:SYS_CMP,0:other} */
 #define IT(opt)     (NP(opt)+NC(opt))
-#define II(s,opt)   (NP(opt)+NC(opt)+NT(opt)+(s)-1)
+#define II(s,opt)   (NP(opt)+NC(opt)+NT(opt)+(s)-1) /* s:sat */
 #define ID(opt)     (NP(opt)+NC(opt)+NT(opt)+NI(opt))
-#define IB(s,f,opt) (NR(opt)+MAXSAT*(f)+(s)-1)
+#define IB(s,f,opt) (NR(opt)+MAXSAT*(f)+(s)-1)  /* s:sat, f:freq */
 
 /* standard deviation of state -----------------------------------------------*/
 static double STD(rtk_t *rtk, int i)
@@ -905,7 +908,7 @@ static int model_iono(gtime_t time, const double *pos, const double *azel,
     }
     return 0;
 }
-/* constraint to local correction --------------------------------------------*/
+/* constraint to local correction, acctually constrain to atmos parameters ---*/
 static int const_corr(const obsd_t *obs, int n, const int *exc,
                       const nav_t *nav, const double *x, const double *pos,
                       const double *azel, rtk_t *rtk, double *v, double *H,
@@ -998,17 +1001,17 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
         antmodel(opt->pcvr,opt->antdel[0],azel+i*2,opt->posopt[1],dantr);
         
         /* phase windup model */
-        if (!model_phw(rtk->sol.time,sat,nav->pcvs[sat-1].type,
-                       opt->posopt[2]?2:0,rs+i*6,rr,&rtk->ssat[sat-1].phw)) {
+        if (!model_phw(rtk->sol.time, sat, nav->pcvs[sat-1].type,
+                       opt->posopt[2]?2:0, rs+i*6, rr, &rtk->ssat[sat-1].phw)) {
             continue;
         }
         /* corrected phase and code measurements */
         corr_meas(obs+i,nav,azel+i*2,&rtk->opt,dantr,dants,
                   rtk->ssat[sat-1].phw,L,P,&Lc,&Pc);
         
-        /* stack phase and code residuals {L1,P1,L2,P2,...} */
+        /* stack phase and code residuals {L1,P1,L2,P2,...} or, if opt select LC, {LC,PC,...}
+         * note: here is still in the loop of obs[i]                                            */
         for (j=0;j<2*NF(opt);j++) {
-            
             dcb=bias=0.0;
             
             if (opt->ionoopt==IONOOPT_IFLC) {
@@ -1017,16 +1020,16 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             else {
                 if ((y=j%2==0?L[j/2]:P[j/2])==0.0) continue;
                 
-                /* receiver DCB correction for P2 */
+                /* receiver DCB correction for P2 -> P1 */
                 if (j/2==1) dcb=-nav->rbias[0][sys==SYS_GLO?1:0][0];
             }
-            C=SQR(lam[j/2]/lam[0])*ionmapf(pos,azel+i*2)*(j%2==0?-1.0:1.0);
+            C=SQR(lam[j/2]/lam[0])*ionmapf(pos,azel+i*2)*(j%2==0?-1.0:1.0); /* the iono sign of P and L are opposite */
             
-            for (k=0;k<nx;k++) H[k+nx*nv]=k<3?-e[k]:0.0;
+            for (k=0;k<nx;k++) H[k+nx*nv]=k<3?-e[k]:0.0; /* nv is index of valid {obs, constrain} */
             
             /* receiver clock */
             k=sys==SYS_GLO?1:(sys==SYS_GAL?2:(sys==SYS_CMP?3:0));
-            cdtr=x[IC(k,opt)];
+            cdtr=x[IC(k,opt)]; /* get clk bias approxi value */
             H[IC(k,opt)+nx*nv]=1.0;
             
             if (opt->tropopt==TROPOPT_EST||opt->tropopt==TROPOPT_ESTG) {
@@ -1038,7 +1041,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                 if (rtk->x[II(sat,opt)]==0.0) continue;
                 H[II(sat,opt)+nx*nv]=C;
             }
-            if (j/2==2&&j%2==1) { /* L5-receiver-dcb */
+            if (j/2==2&&j%2==1) { /* IFB */
                 dcb+=rtk->x[ID(opt)];
                 H[ID(opt)+nx*nv]=1.0;
             }
@@ -1061,14 +1064,14 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                   j%2?"P":"L",j/2+1,v[nv],sqrt(var[nv]),azel[1+i*2]*R2D);
             
             /* reject satellite by pre-fit residuals */
-            if (!post&&opt->maxinno>0.0&&fabs(v[nv])>opt->maxinno) {
+            if (!post&&opt->maxinno>0.0&&fabs(v[nv])>opt->maxinno) { /* only effect at first iteration */
                 trace(2,"outlier (%d) rejected %s sat=%2d %s%d res=%9.4f el=%4.1f\n",
                       post,str,sat,j%2?"P":"L",j/2+1,v[nv],azel[1+i*2]*R2D);
                 exc[i]=1; rtk->ssat[sat-1].rejc[j%2]++;
                 continue;
             }
             /* record large post-fit residuals */
-            if (post&&fabs(v[nv])>sqrt(var[nv])*THRES_REJECT) {
+            if (post&&fabs(v[nv])>sqrt(var[nv])*THRES_REJECT) { /* ne: index of large residual */
                 obsi[ne]=i; frqi[ne]=j; ve[ne]=v[nv]; ne++;
             }
             if (j%2==0) rtk->ssat[sat-1].vsat[j/2]=1;
@@ -1085,10 +1088,10 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
         sat=obs[maxobs].sat;
         trace(2,"outlier (%d) rejected %s sat=%2d %s%d res=%9.4f el=%4.1f\n",
             post,str,sat,maxfrq%2?"P":"L",maxfrq/2+1,vmax,azel[1+maxobs*2]*R2D);
-        exc[maxobs]=1; rtk->ssat[sat-1].rejc[maxfrq%2]++; stat=0;
+        exc[maxobs]=1; rtk->ssat[sat-1].rejc[maxfrq%2]++; stat=0;/* [q] why not return */
         ve[rej]=0;
     }
-    /* constraint to local correction */
+    /* constraint to atmos parameters */
     nv+=const_corr(obs,n,exc,nav,x,pos,azel,rtk,v+nv,H+nv*rtk->nx,var+nv);
     
     for (i=0;i<nv;i++) for (j=0;j<nv;j++) {

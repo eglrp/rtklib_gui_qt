@@ -674,7 +674,7 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double 
     if (varc) *varc=SQR(std);
     return 1;
 }
-/* satellite antenna phase center offset ---------------------------------------
+/* satellite antenna phase center offset(SAT_PCO) ------------------------------
 * compute satellite antenna phase center offset in ecef
 * args   : gtime_t time       I   time (gpst)
 *          double *rs         I   satellite position and velocity (ecef)
@@ -771,7 +771,7 @@ extern int peph2pos(gtime_t time, int sat, const nav_t *nav, int opt,
         satantoff(time,rss,sat,nav,dant);
     }
     for (i=0;i<3;i++) {
-        rs[i  ]=rss[i]+dant[i];
+        rs[i  ]=rss[i]+dant[i]; /* add sat_pco to sat pos */
         rs[i+3]=(rst[i]-rss[i])/tt;
     }
 
