@@ -24,7 +24,7 @@
 
 #define SQR(x)      ((x)*(x))
 
-#define NX          (4+3)       /* # of estimated parameters */
+#define NX          (4+3)       /* # of estimated parameters: {x,y,z,dtr_g,dtr_r,dtr_e,dtr_c} */
 
 #define MAXITR      10          /* max number of iteration for point pos */
 #define ERR_ION     5.0         /* ionospheric delay std (m) */
@@ -53,10 +53,12 @@ static double gettgd(int sat, const nav_t *nav)
     }
     return 0.0;
 }
-/* psendorange with code bias correction --------------------------------------
+/* psendorange with sat code bias correction ---------------------------------
 * args: int     iter    I   iteration index
-* note that: only IONOOPT_IFLC option use double-freq psedorange obs,
-* the rest are all regarded as single-freq obs and only P1 is used.
+* note that:
+*   1) only IONOOPT_IFLC option use double-freq psedorange obs,
+*      the rest mode are all regarded as single-freq obs and only P1 is used.
+*   2) rcv dcb will be absorbed into rcv clk
 *----------------------------------------------------------------------------*/
 static double prange(const obsd_t *obs, const nav_t *nav, const double *azel,
                      int iter, const prcopt_t *opt, double *var)
@@ -214,7 +216,8 @@ extern int tropcorr(gtime_t time, const nav_t *nav, const double *pos,
  * 3) psudorange residuals
  * 4) update design matrix during iteration
  * 5)
- *args: int     ns      I   valid number of observation
+ *args: int     iter    I   # of iteration
+ *      int     ns      I   valid number of observation
  *      double  rs      I   sat pos and vel
  *      double* H       IO  transpose of designed matrix
  *      int     ns      IO  # of valid sat that form obs equation
@@ -237,7 +240,7 @@ static int  rescode(int iter, const obsd_t *obs, int n, const double *rs,
     trace(3,"resprng : n=%d\n",n);
     
     for (i=0;i<3;i++) rr[i]=x[i];
-    dtr=x[3];
+    dtr=x[3]; /* dtr_g */
     
     ecef2pos(rr,pos);
     
@@ -289,7 +292,7 @@ static int  rescode(int iter, const obsd_t *obs, int n, const double *rs,
         /* 7.pseudorange residual */
         v[nv]=P-(r+dtr-CLIGHT*dts[i*2]+dion+dtrp); /* dtr=x[3] for GPS clk, so in other sysR, it need to correct to dts_R.(see 8.2)*/
         
-        /* 8.1 design matrix */
+        /* 8.1 design matrix for x,y,z,dtr_g */
         for (j=0;j<NX;j++) H[j+nv*NX]=j<3?-e[j]:(j==3?1.0:0.0); /* design coefficient of gps clk is alway 1, so dts_R is ISB */
         
         /* 8.2 time system and receiver bias offset correction:
@@ -314,12 +317,13 @@ static int  rescode(int iter, const obsd_t *obs, int n, const double *rs,
     }
 
     /* 10. constraint to avoid rank-deficient
-     * if system glo/gal/bds are selected, i.e. mask=1, then add constraint to dts_R/dts_E/dts_C */
+     * due to the number of state is hardcode with macro NX,
+     * so when a sys is unselected whose mask[i]=1, it need to add constrait to it */
     for (i=0;i<4;i++) {
         if (mask[i]) continue;
         v[nv]=0.0;
         for (j=0;j<NX;j++) H[j+nv*NX]=j==i+3?1.0:0.0;
-        var[nv++]=0.01;
+        var[nv++]=0.01; /* variance is very small, so the constraints are extremely strong */
     }
     return nv;
 }
@@ -365,7 +369,7 @@ static int valsol(const double *azel, const int *vsat, int n,
 *         int*      vsat    IO  valid flag of every sat
 *         double*   resp    IO  residual of every obs(include excluded sat,resp=0.0)
 *         char*     msg     IO  error msg
-* return:  0:failed, 1: ok
+* return: 0:failed, 1: ok
 *----------------------------------------------------------------------------*/
 static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                   const double *vare, const int *svh, const nav_t *nav,
