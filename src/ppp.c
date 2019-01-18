@@ -367,7 +367,13 @@ static double mwmeas(const obsd_t *obs, const nav_t *nav)
     return lam[0]*lam[i]*(obs->L[0]-obs->L[i])/(lam[i]-lam[0])-
            (lam[i]*obs->P[0]+lam[0]*obs->P[i])/(lam[i]+lam[0]);
 }
-/* antenna corrected measurements --------------------------------------------*/
+/* antenna corrected measurements ----------------------------------------------
+ * correct items:
+ * 1) {pco, [pcv]} of sat and rcv
+ * 2) phase wind up
+ * 3) sat dcb of non-combine obs
+ * output:
+ * 1) non-combine obs {L1,L2,...;P1,P2,...} 2) LC combine obs {Lc, Pc} -------*/
 static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel,
                       const prcopt_t *opt, const double *dantr,
                       const double *dants, double phw, double *L, double *P,
@@ -947,7 +953,7 @@ static int const_corr(const obsd_t *obs, int n, const int *exc,
 }
 /* phase and code residuals --------------------------------------------------
  * 0,obs,n,rs,dts,var,svh,dr,exc,nav,xp,rtk,v,H,R,azel
- * args:    int     post        I       # of iteration
+ * args:    int     post        I       0: prefit, >0: post-fit and # of iteration
  *          double* var_rs      I       variance of sat
  *          double* dr          I       displacement by earth tides (ecef) (m)
  *          int*    exc         IO      flag of excluded sat
@@ -976,10 +982,10 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
     for (i=0;i<3;i++) rr[i]=x[i]+dr[i]; /*earth tide, ocean tide loading, pole tide correction*/
     ecef2pos(rr,pos);
     
-    for (i=0;i<n&&i<MAXOBS;i++) {
+    for (i=0;i<n&&i<MAXOBS;i++) {/* loop1: i<n&&i<MAXOBS */
         sat=obs[i].sat;
         lam=nav->lam[sat-1];
-        if (lam[j/2]==0.0||lam[0]==0.0) continue;/* j=opt->nf */
+        if (lam[j/2]==0.0||lam[0]==0.0) continue;/* [bug]there may have some bugs on initialization of j, j=opt->nf (1:L1,2:L1+L2,3:L1+L2+L5) */
         
         if ((r=geodist(rs+i*6,rr,e))<=0.0||
             satazel(pos,e,azel+i*2)<opt->elmin) {
@@ -1005,13 +1011,13 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                        opt->posopt[2]?2:0, rs+i*6, rr, &rtk->ssat[sat-1].phw)) {
             continue;
         }
-        /* corrected phase and code measurements */
+        /* corrected phase and code measurements: ant correct, windup, sat dcb */
         corr_meas(obs+i,nav,azel+i*2,&rtk->opt,dantr,dants,
                   rtk->ssat[sat-1].phw,L,P,&Lc,&Pc);
         
         /* stack phase and code residuals {L1,P1,L2,P2,...} or, if opt select LC, {LC,PC,...}
          * note: here is still in the loop of obs[i]                                            */
-        for (j=0;j<2*NF(opt);j++) {
+        for (j=0;j<2*NF(opt);j++) {/* loop2: j<2*NF(opt)  */
             dcb=bias=0.0;
             
             if (opt->ionoopt==IONOOPT_IFLC) {
@@ -1076,8 +1082,9 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             }
             if (j%2==0) rtk->ssat[sat-1].vsat[j/2]=1;
             nv++;
-        }
-    }
+        }/* loop2: j<2*NF(opt) */
+    }/* loop1: i<n&&i<MAXOBS */
+
     /* reject satellite with large and max post-fit residual */
     if (post&&ne>0) {
         vmax=ve[0]; maxobs=obsi[0]; maxfrq=frqi[0]; rej=0;
@@ -1160,6 +1167,7 @@ static int test_hold_amb(rtk_t *rtk)
     if (rtk->opt.modear!=ARMODE_FIXHOLD) return 0;
     
     /* reset # of continuous fixed if new ambiguity introduced */
+    /* [q] why need two loop? */
     for (i=0;i<MAXSAT;i++) {
         if (rtk->ssat[i].fix[0]!=2&&rtk->ssat[i].fix[1]!=2) continue;
         for (j=0;j<MAXSAT;j++) {
@@ -1219,7 +1227,7 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
         matcpy(xp,rtk->x,rtk->nx,1);
         matcpy(Pp,rtk->P,rtk->nx,rtk->nx);
         
-        /* prefit residuals */
+        /* prefit residuals: the first parameter must be 0 */
         if (!(nv=ppp_res(0,obs,n,rs,dts,var,svh,dr,exc,nav,xp,rtk,v,H,R,azel))) {
             trace(2,"%s ppp (%d) no valid obs data\n",str,i+1);
             break;
@@ -1229,7 +1237,7 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
             trace(2,"%s ppp (%d) filter error info=%d\n",str,i+1,info);
             break;
         }
-        /* postfit residuals */
+        /* postfit residuals: the first parameter > 0 */
         if (ppp_res(i+1,obs,n,rs,dts,var,svh,dr,exc,nav,xp,rtk,v,H,R,azel)) {
             matcpy(rtk->x,xp,rtk->nx,1);
             matcpy(rtk->P,Pp,rtk->nx,rtk->nx);
