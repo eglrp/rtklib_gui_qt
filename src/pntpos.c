@@ -438,6 +438,11 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     return 0;
 }
 /* raim fde (failure detection and exclution) ---------------------------------
+ * note that:
+ * this method only work when there is only one undected outlier among obs, because
+ * in solvel() in estpos() use chi-square check, which is under assumption that all residuals
+ * are submitted to normal distribution. so in raim_fde, when there are two or more outlier,
+ * there are still one or more after you exclude one, and in this case, this fde method will not work.
  * reference:
  * [1]Sect.5.1.1 RAIM FDE based on Least Squar Residual in
  * Yun Wu, 2009, Algorithm Research on GNSS Receiver Autonomous Integrity Monitoring
@@ -497,7 +502,9 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
         if (rms_e>rms) continue; /* That rms do not improve means a valid sat is excluded but invalid one */
         else{ /*raim fde have found an invalid sat*/}
 
-        /* 5.save result */
+        /* 5.save result : azel, vsat, resp, sol, rms, vsat
+         * due to the computation of azel depends on rcv (xyz), and fde will update rcv (xyz),
+         * so azel need update while sat (xyz) not.                                          */
         for (j=k=0;j<n;j++) {
             if (j==i) continue;
             matcpy(azel+2*j,azel_e+2*k,2,1);
@@ -506,13 +513,15 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
         }
         stat=1; /*update stat from 0 to 1.(0:positioning failed, 1:ok)*/
         *sol=sol_e;
-        sat=obs[i].sat;
-        rms=rms_e; /* update rms to an improved one after invalid sat is excluding */
-        vsat[i]=0; /* invalid sat finded after raim fde. (0=invalid, 1=valid) */
+        sat=obs[i].sat; /*[bug]and 'sat' will be overwrite by latter one?
+                        * Nope. this method only work for only one outlier among obs,
+                        * and when there more, this method cannot detect any outlier. */
+        rms=rms_e; /* update rms */
+        vsat[i]=0; /* invalid sat found after raim fde. (0=invalid, 1=valid) */
         strcpy(msg,msg_e);
     }
-    if (stat) {
-        time2str(obs[0].time,tstr,2); satno2id(sat,name); /*[bug]when two or more invalid sat are pick out, 'var' will be overwrited by the last one */
+    if (stat) {       
+        time2str(obs[0].time,tstr,2); satno2id(sat,name);
         trace(2,"%s: %s excluded by raim\n",tstr+11,name);
     }
     free(obs_e);
@@ -648,8 +657,9 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     /* 2. estimate receiver position with pseudorange */
     stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
     
-    /* 3. if failed to positioning, then do raim fde */
-    if (!stat && n>=6 && opt->posopt[4]) { /* opt->posopt[4]: gui check flag for raim fde, see rtkpost/rtknavi option gui */
+    /* 3. if failed to positioning, then do raim fde
+     * n>=5 it can dectect error, while n>=6 can identify outlier. this following step is to identify outlier. */
+    if (!stat && n>=6 && opt->posopt[4]) { /* opt->posopt[4]: gui check flag for raim fde */
         stat=raim_fde(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
     }
     /* 4. estimate receiver velocity with doppler */
