@@ -102,7 +102,7 @@
 /* number of states */
 #define NF(opt)     ((opt)->ionoopt==IONOOPT_IFLC?1:(opt)->nf)
 #define NP(opt)     ((opt)->dynamics?9:3) /*dynamics{0=none, [1=vel, 2=accelerate]}, 1&2 can be sorted as one type */
-#define NC(opt)     (NSYS) /* rcv clk */
+#define NC(opt)     (NSYS) /* rcv clk, all system are selected, need constraint to avoid rank-deficient */
 #define NT(opt)     ((opt)->tropopt<TROPOPT_EST?0:((opt)->tropopt==TROPOPT_EST?1:3))
 #define NI(opt)     ((opt)->ionoopt==IONOOPT_EST?MAXSAT:0)
 #define ND(opt)     ((opt)->nf>=3?1:0)  /* IFB: inter-freq-bias on the thrid freq */
@@ -195,7 +195,8 @@ extern int pppoutstat(rtk_t *rtk, char *buff)
 #endif
     return (int)(p-buff);
 }
-/* exclude meas of eclipsing satellite (block IIA) ---------------------------*/
+/* exclude meas of eclipsing satellite (block IIA) ----------------------------
+ * coordinates of eclipsed block IIA sat will be reset to 0.0 -------------- */
 static void testeclipse(const obsd_t *obs, int n, const nav_t *nav, double *rs)
 {
     double rsun[3],esun[3],r,ang,erpv[5]={0},cosa;
@@ -227,7 +228,7 @@ static void testeclipse(const obsd_t *obs, int n, const nav_t *nav, double *rs)
         trace(3,"eclipsing sat excluded %s sat=%2d\n",time_str(obs[0].time,0),
               obs[i].sat);
         
-        for (j=0;j<3;j++) rs[j+i*6]=0.0;
+        for (j=0;j<3;j++) rs[j+i*6]=0.0; /* discard eclipsed sat */
     }
 }
 /* nominal yaw-angle ---------------------------------------------------------*/
@@ -403,6 +404,7 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel,
             L[i]-=0.25*lam[i]; /* 1/4 cycle-shift */
 #endif
         }
+        /*to do: C3->P3, so in other function we can add IFB paramater fro triple-freq process */
     }
     /* iono-free LC */
     *Lc=*Pc=0.0;
@@ -817,7 +819,8 @@ static void satantpcv(const double *rs, const double *rr, const pcv_t *pcv,
     
     antmodel_s(pcv,nadir,dant);
 }
-/* precise tropospheric model ------------------------------------------------*/
+/* precise tropospheric model -------------------------------------------------
+ * return: std(slant trop delay) --------------------------------------------*/
 static double trop_model_prec(gtime_t time, const double *pos,
                               const double *azel, const double *x, double *dtdx,
                               double *var)
@@ -843,7 +846,7 @@ static double trop_model_prec(gtime_t time, const double *pos,
     }
     dtdx[0]=m_w;
     *var=SQR(0.01);
-    return m_h*zhd+m_w*(x[0]-zhd);
+    return m_h*zhd+m_w*(x[0]-zhd); /* x[0]:ztd */
 }
 /* tropospheric model ---------------------------------------------------------*/
 static int model_trop(gtime_t time, const double *pos, const double *azel,
@@ -992,6 +995,10 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             exc[i]=1;
             continue;
         }
+        /* 'rtk->ssat[sat-1].vs' and exc are both flags identifing a sat is valid or not
+        * differences between them :
+        * vs    : mark after solution computation or some solution validation test.
+        * exc   : mark by non-solution-computation factors, like snr, elevation et al. */
         if (!(sys=satsys(sat,NULL))||!rtk->ssat[sat-1].vs||
             satexclude(obs[i].sat,var_rs[i],svh[i],opt)||exc[i]) {/* exc[i]=1 : excluded by former iteration */
             exc[i]=1;
@@ -1028,26 +1035,29 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                 
                 /* receiver DCB correction for P2 -> P1 */
                 if (j/2==1) dcb=-nav->rbias[0][sys==SYS_GLO?1:0][0];
+
+                /*todo: third freq */
+                /* if(j/2=2){} */
             }
             C=SQR(lam[j/2]/lam[0])*ionmapf(pos,azel+i*2)*(j%2==0?-1.0:1.0); /* the iono sign of P and L are opposite */
             
             for (k=0;k<nx;k++) H[k+nx*nv]=k<3?-e[k]:0.0; /* nv is index of valid {obs, constrain} */
             
-            /* receiver clock */
-            k=sys==SYS_GLO?1:(sys==SYS_GAL?2:(sys==SYS_CMP?3:0));
+            /* receiver clock: clk in PPP is independent parameter while in pntpos() they dtr_g and ISBs */
+            k=sys==SYS_GLO?1:(sys==SYS_GAL?2:(sys==SYS_CMP?3:0)); /* default case=0, due to some sys do not have independent time sys, like qzss and IRNSS et al. */
             cdtr=x[IC(k,opt)]; /* get clk bias approxi value */
-            H[IC(k,opt)+nx*nv]=1.0;
+            H[IC(k,opt)+nx*nv]=1.0; /* independent clk */
             
             if (opt->tropopt==TROPOPT_EST||opt->tropopt==TROPOPT_ESTG) {
                 for (k=0;k<(opt->tropopt>=TROPOPT_ESTG?3:1);k++) {
-                    H[IT(opt)+k+nx*nv]=dtdx[k];
+                    H[IT(opt)+k+nx*nv]=dtdx[k]; /*dtdx[0] is zwd map function*/
                 }
             }
             if (opt->ionoopt==IONOOPT_EST) {
                 if (rtk->x[II(sat,opt)]==0.0) continue;
                 H[II(sat,opt)+nx*nv]=C;
             }
-            if (j/2==2&&j%2==1) { /* IFB */
+            if (j/2==2&&j%2==1) { /* third freq: consider IFB */
                 dcb+=rtk->x[ID(opt)];
                 H[ID(opt)+nx*nv]=1.0;
             }
@@ -1056,7 +1066,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                 H[IB(sat,j/2,opt)+nx*nv]=1.0;
             }
             /* residual */
-            v[nv]=y-(r+cdtr-CLIGHT*dts[i*2]+dtrp+C*dion+dcb+bias);
+            v[nv]=y-(r+cdtr-CLIGHT*dts[i*2]+dtrp+C*dion+dcb+bias); /* for coding convenience, write bias and dcb in one equation */
             
             if (j%2==0) rtk->ssat[sat-1].resc[j/2]=v[nv];
             else        rtk->ssat[sat-1].resp[j/2]=v[nv];
@@ -1219,8 +1229,9 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     if (opt->tidecorr) {                   /* opt->tidecorr 0:off,1:solid,2:solid+otl+pole */
         tidedisp(gpst2utc(obs[0].time),rtk->x,opt->tidecorr==1?1:7,&nav->erp,opt->odisp[0],dr);
     }
-    nv=n*rtk->opt.nf*2+MAXSAT+3;
-    xp=mat(rtk->nx,1);  Pp=zeros(rtk->nx,rtk->nx);
+
+    nv=n*rtk->opt.nf*2+MAXSAT+3; /* 2:P+L;  3:constraints for unselected sys */
+    xp=mat(rtk->nx,1);  Pp=zeros(rtk->nx,rtk->nx); /* 'rtk->nx' see rtkinit() and pppnx() */
     v=mat(nv,1);        H=mat(rtk->nx,nv);          R=mat(nv,nv);
     
     for (i=0;i<MAX_ITER;i++) {/* iteration */
@@ -1250,7 +1261,6 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     }/* iteration */
 
     if (stat==SOLQ_PPP) {
-        
         /* ambiguity resolution in ppp */
         if (ppp_ar(rtk,obs,n,exc,nav,azel,xp,Pp)&&
             ppp_res(9,obs,n,rs,dts,var,svh,dr,exc,nav,xp,rtk,v,H,R,azel)) {
