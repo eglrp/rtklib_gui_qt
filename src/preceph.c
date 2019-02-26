@@ -288,6 +288,7 @@ extern void readsp3(const char *file, nav_t *nav, int opt)
         
         fclose(fp);
     }
+    /* [bug]this might cause bug; to solve this, use 'for(i=0;i<n;i++)' */
     for (i=0;i<MAXEXFILE;i++) free(efiles[i]);
     
     /* combine precise ephemeris */

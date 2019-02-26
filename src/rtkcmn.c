@@ -1647,7 +1647,7 @@ extern void time2str(gtime_t t, char *s, int n)
 * args   : gtime_t t        I   gtime_t struct
 *          int    n         I   number of decimals
 * return : time string
-* notes  : not reentrant, do not use multiple in a function
+* notes  : not reentrant, do not use multiple in a function, due to buff is staic!
 *-----------------------------------------------------------------------------*/
 extern char *time_str(gtime_t t, int n)
 {
@@ -1680,7 +1680,7 @@ extern int adjgpsweek(int week)
     if (w<1560) w=1560; /* use 2009/12/1 if time is earlier than 2009/12/1 */
     return week+(w-week+512)/1024*1024;
 }
-/* get tick time ---------------------------------------------------------------
+/* get tick time, tick time is computer time -----------------------------------
 * get current tick in ms
 * args   : none
 * return : current tick in ms
@@ -2693,7 +2693,7 @@ extern int sortobs(obs_t *obs)
     }
     return n;
 }
-/* screen by time --------------------------------------------------------------
+/* screen by time: discard data between time interval
 * screening by time start, time end, and time interval
 * args   : gtime_t time  I      time
 *          gtime_t ts    I      time start (ts.time==0:no screening by ts)
@@ -2704,8 +2704,8 @@ extern int sortobs(obs_t *obs)
 extern int screent(gtime_t time, gtime_t ts, gtime_t te, double tint)
 {
     return (tint<=0.0||fmod(time2gpst(time,NULL)+DTTOL,tint)<=DTTOL*2.0)&&
-           (ts.time==0||timediff(time,ts)>=-DTTOL)&&
-           (te.time==0||timediff(time,te)<  DTTOL);
+           (ts.time==0||timediff(time,ts)>=-DTTOL)&& /* time+ >= ts-DTTOL */
+           (te.time==0||timediff(time,te)<  DTTOL);  /* time  <= te+DTTOL */
 }
 /* read/save navigation data ---------------------------------------------------
 * save or load navigation data

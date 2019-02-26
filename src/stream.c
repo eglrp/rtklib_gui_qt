@@ -135,8 +135,8 @@ typedef struct {            /* file control type */
     char openpath[MAXSTRPATH]; /* open file path */
     int mode;               /* file mode */
     int timetag;            /* time tag flag (0:off,1:on) */
-    int repmode;            /* replay mode (0:master,1:slave) */
-    int offset;             /* time offset (ms) for slave */
+    int repmode;            /* replay mode (0:master,1:slave); master act as benchmark for sync */
+    int offset;             /* time offset (ms) for slave, and slave use offset to sync to master */
     int size_fpos;          /* file position size (bytes) */
     gtime_t time;           /* start time */
     gtime_t wtime;          /* write time */
@@ -2463,7 +2463,10 @@ static void closeftp(ftp_t *ftp)
     
     if (ftp->state!=1) free(ftp);
 }
-/* read ftp ------------------------------------------------------------------*/
+/* read ftp --------------------------------------------------------------------
+ * procedure: when ftp downloading finished, copy filepath of downloaded file to
+ * svr->buff[i] corresponding to svr->stream[i]
+ * ---------------------------------------------------------------------------*/
 static int readftp(ftp_t *ftp, unsigned char *buff, int n, char *msg)
 {
     gtime_t time;
@@ -2842,7 +2845,7 @@ extern void strclose(stream_t *stream)
     strunlock(stream);
 }
 /* sync streams ----------------------------------------------------------------
-* sync time for streams
+* sync time for streams by using time-tag
 * args   : stream_t *stream1 IO stream 1
 *          stream_t *stream2 IO stream 2
 * return : none
@@ -2851,6 +2854,7 @@ extern void strclose(stream_t *stream)
 extern void strsync(stream_t *stream1, stream_t *stream2)
 {
     file_t *file1,*file2;
+    /* only STR_FILE (post)mode need sync */
     if (stream1->type!=STR_FILE||stream2->type!=STR_FILE) return;
     file1=(file_t*)stream1->port;
     file2=(file_t*)stream2->port;
@@ -2913,9 +2917,9 @@ extern int strread(stream_t *stream, unsigned char *buff, int n)
 }
 /* write stream ----------------------------------------------------------------
 * write data to stream (unblocked)
-* args   : stream_t *stream I   stream
-*          unsinged char *buff I data buffer
-*          int    n         I   data length
+* args   : stream_t         *stream     I   stream
+*          unsinged char    *buff       I   data buffer
+*          int              n           I   data length
 * return : status (0:error,1:ok)
 * notes  : write data to buffer and return immediately
 *-----------------------------------------------------------------------------*/

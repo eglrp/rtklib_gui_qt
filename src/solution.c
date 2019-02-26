@@ -1514,8 +1514,8 @@ extern int outprcopts(unsigned char *buff, const prcopt_t *opt)
 }
 /* output solution header ------------------------------------------------------
 * output solution header to buffer
-* args   : unsigned char *buff IO output buffer
-*          solopt_t *opt    I   solution options
+* args   : unsigned char    *buff   IO      output buffer
+*          solopt_t         *opt    I       solution options
 * return : number of output bytes
 *-----------------------------------------------------------------------------*/
 extern int outsolheads(unsigned char *buff, const solopt_t *opt)

@@ -825,12 +825,12 @@ static int decode_obsdata(FILE *fp, char *buff, double ver, int mask,
     trace(4,"decode_obsdata: time=%s sat=%2d\n",time_str(obs->time,0),obs->sat);
     return 1;
 }
-/* save slips ----------------------------------------------------------------*/
+/* save slips: if cs occur between sample interval, this func can save&pass this info to next sample obs data for cs detect-&restoring */
 static void saveslips(unsigned char slips[][NFREQ], obsd_t *data)
 {
     int i;
     for (i=0;i<NFREQ;i++) {
-        if (data->LLI[i]&1) slips[data->sat-1][i]|=LLI_SLIP;
+        if (data->LLI[i]&1) slips[data->sat-1][i]|=LLI_SLIP; /* operator '|' can save cs info */
     }
 }
 /* restore slips -------------------------------------------------------------*/
@@ -958,7 +958,7 @@ static void set_index(double ver, int sys, const char *opt,
     }
 #endif
 }
-/* read rinex obs data body --------------------------------------------------*/
+/* read rinex obs data body: read one epoch ----------------------------------*/
 static int readrnxobsb(FILE *fp, const char *opt, double ver, int *tsys,
                        char tobs[][MAXOBSTYPE][4], int *flag, obsd_t *data,
                        sta_t *sta)
@@ -1006,7 +1006,7 @@ static int readrnxobsb(FILE *fp, const char *opt, double ver, int *tsys,
     }
     return -1;
 }
-/* read rinex obs ------------------------------------------------------------*/
+/* read rinex obs: read all epoch --------------------------------------------*/
 static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint,
                       const char *opt, int rcv, double ver, int *tsys,
                       char tobs[][MAXOBSTYPE][4], obs_t *obs, sta_t *sta)
@@ -1037,7 +1037,7 @@ static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint,
         
         for (i=0;i<n;i++) {
             
-            /* restore cycle-slip */
+            /* restore cycle-slip [?]save and restore? due to screen data by time? (may be screen data by time doesn't means cycle slip, so save and restore it)*/
             restslips(slips,data+i);
             
             data[i].rcv=(unsigned char)rcv;
@@ -1454,7 +1454,9 @@ static int readrnxclk(FILE *fp, const char *opt, int index, nav_t *nav)
     }
     return nav->nc>0;
 }
-/* read rinex file -----------------------------------------------------------*/
+/* read rinex file -------------------------------------------------------------
+ * fp: file pointer
+ * ---------------------------------------------------------------------------*/
 static int readrnxfp(FILE *fp, gtime_t ts, gtime_t te, double tint,
                      const char *opt, int flag, int index, char *type,
                      obs_t *obs, nav_t *nav, sta_t *sta)

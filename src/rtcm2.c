@@ -32,7 +32,7 @@ static int obsindex(obs_t *obs, gtime_t time, int sat)
 {
     int i,j;
     
-    for (i=0;i<obs->n;i++) {
+    for (i=0;i<obs->n;i++) { /* pay attention to the resetting of obs->n */
         if (obs->data[i].sat==sat) return i; /* field already exists */
     }
     if (i>=MAXOBS) return -1; /* overflow */
@@ -135,7 +135,11 @@ static int decode_type16(rtcm_t *rtcm)
     trace(3,"rtcm2 16 message: %s\n",rtcm->msg);
     return 9;
 }
-/* decode type 17: gps ephemerides -------------------------------------------*/
+/* decode type 17: gps ephemerides ---------------------------------------------
+* from RTCM 2.3 official document:
+* Note that this message identifies the satellite by PRN number (Word 21),
+* and that a separate message is required for each satellite
+*-----------------------------------------------------------------------------*/
 static int decode_type17(rtcm_t *rtcm)
 {
     eph_t eph={0};
@@ -230,12 +234,12 @@ static int decode_type18(rtcm_t *rtcm)
         if (sys) time=utc2gpst(time); /* convert glonass time to gpst */
         
         tt=timediff(rtcm->obs.data[0].time,time);
-        if (rtcm->obsflag||fabs(tt)>1E-9) {
-            rtcm->obs.n=rtcm->obsflag=0;
+        if (rtcm->obsflag||fabs(tt)>1E-9) { /* to start a new epoch */
+            rtcm->obs.n=rtcm->obsflag=0; /* [IMPORTANT] resetting of obs.n will affect the generation of obs index */
         }
         if ((index=obsindex(&rtcm->obs,time,sat))>=0) {
             rtcm->obs.data[index].L[freq]=-cp/256.0;
-            rtcm->obs.data[index].LLI[freq]=rtcm->loss[sat-1][freq]!=loss;
+            rtcm->obs.data[index].LLI[freq]=rtcm->loss[sat-1][freq]!=loss; /* use value of loss to judge whether the signal is kept tracted */
             rtcm->obs.data[index].code[freq]=
                 !freq?(code?CODE_L1P:CODE_L1C):(code?CODE_L2P:CODE_L2C);
             rtcm->loss[sat-1][freq]=loss;

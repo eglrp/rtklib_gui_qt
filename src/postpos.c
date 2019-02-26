@@ -649,7 +649,7 @@ static void readpreceph(char **infile, int n, const prcopt_t *prcopt,
     
     for (i=0;i<n;i++) {
         if ((ext=strrchr(infile[i],'.'))&&
-            (!strcmp(ext,".rtcm3")||!strcmp(ext,".RTCM3"))) {
+            (!strcmp(ext,".rtcm3")||!strcmp(ext,".RTCM3"))) {/*rtcm file*/
             strcpy(rtcm_file,infile[i]);
             init_rtcm(&rtcm);
             break;
@@ -694,7 +694,7 @@ static int readobsnav(gtime_t ts, gtime_t te, double ti, char **infile,
     nepoch=0;
     
     for (i=0;i<n;i++) {
-        if (checkbrk("")) return 0;
+        if (checkbrk("")) return 0; /* judge abort */
         
         if (index[i]!=ind) {
             if (obs->n>nobs) rcv++;
@@ -998,9 +998,9 @@ static FILE *openfile(const char *outfile)
     return !*outfile?stdout:fopen(outfile,"a");
 }
 /* execute processing session ------------------------------------------------
-* procedure£º
-*	1)read data: ion, erp, obs, dcb, otl
-*	2)antpos();
+* procedure
+*	1)read data:ion, erp, obs, dcb, otl
+*	2)antpos()
 *	3)[optional]open statistics output(*.stat), FILE handle: static var 'fp_stat' in rtkpos.c
 *	4)write output file(*.pos); struct sol_t
 *	5)choose filter direction, choose positioning mode in procpos()
@@ -1184,7 +1184,9 @@ static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     }
     return stat;
 }
-/* execute processing session for each base station : read precise eph -------*/
+/* execute processing session for each base station : read precise eph
+ * param    :   int     flag    I   valid keyword to be replaced(1:valid)
+ * --------------------------------------------------------------------------*/
 static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                      const solopt_t *sopt, const filopt_t *fopt, int flag,
                      char **infile, const int *index, int n, char *outfile,
@@ -1299,10 +1301,10 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
     
     trace(3,"postpos : ti=%.0f tu=%.0f n=%d outfile=%s\n",ti,tu,n,outfile);
     
-    /* open processing session */
+    /* open processing session. one session=all units. */
     if (!openses(popt,sopt,fopt,&navs,&pcvss,&pcvsr)) return -1;
     
-    if (ts.time!=0&&te.time!=0&&tu>=0.0) {
+    if (ts.time!=0&&te.time!=0&&tu>=0.0) {/* unit-wise data processing */
         if (timediff(te,ts)<0.0) {
             showmsg("error : no period");
             closeses(&navs,&pcvss,&pcvsr);
@@ -1317,15 +1319,15 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
         }
         if (tu==0.0||tu>86400.0*MAXPRCDAYS) tu=86400.0*MAXPRCDAYS;
         settspan(ts,te);
-        tunit=tu<86400.0?tu:86400.0;
-        tss=tunit*(int)floor(time2gpst(ts,&week)/tunit);
+        tunit=tu<86400.0?tu:86400.0; /* tunit <= 1day. unit: processing unit, i.e. one segment or arc */
+        tss=tunit*(int)floor(time2gpst(ts,&week)/tunit); /* start time of one unit */
         
-        for (i=0;;i++) { /* for each periods */
+        for (i=0;;i++) { /* for each unit */
             tts=gpst2time(week,tss+i*tu);
-            tte=timeadd(tts,tu-DTTOL);
-            if (timediff(tts,te)>0.0) break;
-            if (timediff(tts,ts)<0.0) tts=ts;
-            if (timediff(tte,te)>0.0) tte=te;
+            tte=timeadd(tts,tu-DTTOL); /* get end time of one unit */
+            if (timediff(tts,te)>0.0) break;  /* only hit after first loop: all data processed */
+            if (timediff(tts,ts)<0.0) tts=ts; /* trim unit start time */
+            if (timediff(tte,te)>0.0) tte=te; /* trim unit end time */
             
             strcpy(proc_rov ,"");
             strcpy(proc_base,"");
@@ -1333,11 +1335,12 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                 stat=1;
                 break;
             }
+
             for (j=k=nf=0;j<n;j++) {
                 
                 ext=strrchr(infile[j],'.');
                 
-                if (ext&&(!strcmp(ext,".rtcm3")||!strcmp(ext,".RTCM3"))) {
+                if (ext&&(!strcmp(ext,".rtcm3")||!strcmp(ext,".RTCM3"))) {/* rtcm3 files */
                     strcpy(ifile[nf++],infile[j]);
                 }
                 else {

@@ -511,10 +511,11 @@ extern "C" {
 #define P2_50       8.881784197001252E-16 /* 2^-50 */
 #define P2_55       2.775557561562891E-17 /* 2^-55 */
 
+/* refer: see https://blog.csdn.net/ccrrt/article/details/8099297 */
 #ifdef WIN32
 #define thread_t    HANDLE
 #define lock_t      CRITICAL_SECTION
-#define initlock(f) InitializeCriticalSection(f)
+#define initlock(f) InitializeCriticalSection(f) /* initialization of CRITICAL_SECTION object */
 #define lock(f)     EnterCriticalSection(f)
 #define unlock(f)   LeaveCriticalSection(f)
 #define FILEPATHSEP '\\'
@@ -629,7 +630,7 @@ typedef struct {        /* GLONASS broadcast ephemeris type */
     double dtaun;       /* delay between L1 and L2 (s) */
 } geph_t;
 
-typedef struct {        /* precise ephemeris type for *all* sat */
+typedef struct {        /* precise ephemeris type for *all* sat, for one TimeOfEphemeris */
     gtime_t time;       /* time (GPST) */
     int index;          /* ephemeris index for multiple files */
     double pos[MAXSAT][4]; /* satellite position/clock (ecef) (m|s) */
@@ -854,7 +855,7 @@ typedef struct {        /* ppp corrections type */
 } pppcorr_t;
 
 typedef struct {        /* navigation data type */
-    int n,nmax;         /* number of broadcast ephemeris */
+    int n,nmax;         /* number of broadcast ephemeris. nmax: # of brd eph should be observed; n: # of it acctually observed */
     int ng,ngmax;       /* number of glonass ephemeris */
     int ns,nsmax;       /* number of sbas ephemeris */
     int ne,nemax;       /* number of precise ephemeris */
@@ -980,7 +981,7 @@ typedef struct {        /* RTCM control struct type */
     char msgtype[256];  /* last message type */
     char msmtype[6][128]; /* msm signal types */
     int obsflag;        /* obs data complete flag (1:ok,0:not complete) */
-    int ephsat;         /* update satellite of ephemeris */
+    int ephsat;         /* update satellite of ephemeris, [q] more specific?? */
     double cp[MAXSAT][NFREQ+NEXOBS]; /* carrier-phase measurement */
     unsigned short lock[MAXSAT][NFREQ+NEXOBS]; /* lock time */
     unsigned short loss[MAXSAT][NFREQ+NEXOBS]; /* loss of lock count */
@@ -1309,7 +1310,7 @@ typedef struct {        /* stream server type */
     lock_t lock;        /* lock flag */
 } strsvr_t;
 
-typedef struct {        /* RTK server type */
+typedef struct {        /* RTK server type: initialize in rtksvrinit() @rtksvr.c */
     int state;          /* server state (0:stop,1:running) */
     int cycle;          /* processing cycle (ms) */
     int nmeacycle;      /* NMEA request cycle (ms) (0:no req) */
@@ -1317,8 +1318,8 @@ typedef struct {        /* RTK server type */
     double nmeapos[3];  /* NMEA request position (ecef) (m) */
     int buffsize;       /* input buffer size (bytes) */
     int format[3];      /* input format {rov,base,corr} */
-    solopt_t solopt[2]; /* output solution options {sol1,sol2}, [q] why two? */
-    int navsel;         /* ephemeris select (0:all,1:rover,2:base,3:corr) */
+    solopt_t solopt[2]; /* output solution options {sol1,sol2}. yzm:rtklib support two kind of out format for solution */
+    int navsel;         /* ephemeris select: use ephemeris from input streams(0:all,1:rover,2:base,3:corr). */
     int nsbs;           /* number of sbas message */
     int nsol;           /* number of solution buffer */
     rtk_t rtk;          /* RTK control/result struct */
@@ -1329,7 +1330,7 @@ typedef struct {        /* RTK server type */
     unsigned char *sbuf[2]; /* output buffers {sol1,sol2} */
     unsigned char *pbuf[3]; /* peek buffers {rov,base,corr}, [q] for what? */
     sol_t solbuf[MAXSOLBUF]; /* solution buffer */
-    unsigned int nmsg[3][10]; /* input message counts,[q] why need 10? */
+    unsigned int nmsg[3][10]; /* input message counts. For the second index 10, see updatesrv() @rtksvr.c  */
     raw_t  raw [3];     /* receiver raw control {rov,base,corr} */
     rtcm_t rtcm[3];     /* RTCM control {rov,base,corr} */
     gtime_t ftime[3];   /* download time {rov,base,corr} */
