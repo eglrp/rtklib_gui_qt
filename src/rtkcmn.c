@@ -2283,9 +2283,9 @@ extern int readpcv(const char *file, pcvs_t *pcvs)
 /* search antenna parameter ----------------------------------------------------
 * read satellite antenna phase center position
 * args   : int    sat         I   satellite number (0: receiver antenna)
-*          char   *type       I   antenna type for receiver antenna
+*          char   *type       I   antenna type for receiver antenna(not for sat antenna)
 *          gtime_t time       I   time to search parameters
-*          pcvs_t *pcvs       IO  antenna parameters
+*          pcvs_t *pcvs       I   antenna parameters
 * return : antenna parameter (NULL: no antenna)
 *-----------------------------------------------------------------------------*/
 extern pcv_t *searchpcv(int sat, const char *type, gtime_t time,
@@ -2299,14 +2299,14 @@ extern pcv_t *searchpcv(int sat, const char *type, gtime_t time,
     
     if (sat) { /* search satellite antenna */
         for (i=0;i<pcvs->n;i++) {
-            pcv=pcvs->pcv+i;
+            pcv=pcvs->pcv+i; /* pointer of a specific antenna's 'pcv_t' type */
             if (pcv->sat!=sat) continue;
             if (pcv->ts.time!=0&&timediff(pcv->ts,time)>0.0) continue;
             if (pcv->te.time!=0&&timediff(pcv->te,time)<0.0) continue;
-            return pcv;
+            return pcv; /* found a valid pcv_t */
         }
     }
-    else {
+    else { /* search receiver antenna(sat=0 means rcv) */
         strcpy(buff,type);
         for (p=strtok(buff," ");p&&n<2;p=strtok(NULL," ")) types[n++]=p;
         if (n<=0) return NULL;

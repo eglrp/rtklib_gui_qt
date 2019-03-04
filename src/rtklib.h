@@ -547,7 +547,7 @@ typedef struct {        /* observation data record: for one sat-rcv pair */
 } obsd_t;
 
 typedef struct {        /* observation data : usually for one epoch */
-    int n,nmax;         /* number of obervation data/allocated */
+    int n,nmax;         /* number of obervation data/allocated; nmax is used for realloc() */
     obsd_t *data;       /* observation data records */
 } obs_t;
 
@@ -891,7 +891,7 @@ typedef struct {        /* navigation data type */
     double wlbias[MAXSAT];   /* wide-lane bias (cycle) */
     double glo_cpbias[4];    /* glonass code-phase bias {1C,1P,2C,2P} (m) */
     char glo_fcn[MAXPRNGLO+1]; /* glonass frequency channel number + 8 */
-    pcv_t pcvs[MAXSAT]; /* satellite antenna pcv */
+    pcv_t pcvs[MAXSAT]; /* satellite antenna pcv: load from pcvss,see setpcv()@postpos.c */
     sbssat_t sbssat;    /* SBAS satellite corrections */
     sbsion_t sbsion[MAXBAND+1]; /* SBAS ionosphere corrections */
     dgps_t dgps[MAXSAT]; /* DGPS corrections */

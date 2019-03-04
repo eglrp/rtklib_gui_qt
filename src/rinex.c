@@ -717,7 +717,7 @@ static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
     trace(4,"decode_obsepoch: time=%s flag=%d\n",time_str(*time,3),*flag);
     return n;
 }
-/* decode obs data -----------------------------------------------------------*/
+/* decode obs data: one sat-rcv pair at one epoch-----------------------------*/
 static int decode_obsdata(FILE *fp, char *buff, double ver, int mask,
                           sigind_t *index, obsd_t *obs)
 {
@@ -756,8 +756,8 @@ static int decode_obsdata(FILE *fp, char *buff, double ver, int mask,
             j=0;
         }
         if (stat) {
-            val[i]=str2num(buff,j,14)+ind->shift[i];
-            lli[i]=(unsigned char)str2num(buff,j+14,1)&3;
+            val[i]=str2num(buff,j,14)+ind->shift[i];      /* value */
+            lli[i]=(unsigned char)str2num(buff,j+14,1)&3; /* wyx: obs equality flag */
         }
     }
     if (!stat) return 0;
@@ -847,8 +847,8 @@ static int addobsdata(obs_t *obs, const obsd_t *data)
 {
     obsd_t *obs_data;
     
-    if (obs->nmax<=obs->n) {
-        if (obs->nmax<=0) obs->nmax=NINCOBS; else obs->nmax*=2;
+    if (obs->nmax<=obs->n) { /* need more store memory */
+        if (obs->nmax<=0) obs->nmax=NINCOBS; else obs->nmax*=2; /* double nmax due to reduce the times of realloc(even increment increse dramatically) */
         if (!(obs_data=(obsd_t *)realloc(obs->data,sizeof(obsd_t)*obs->nmax))) {
             trace(1,"addobsdata: memalloc error n=%dx%d\n",sizeof(obsd_t),obs->nmax);
             free(obs->data); obs->data=NULL; obs->n=obs->nmax=0;
@@ -992,9 +992,9 @@ static int readrnxobsb(FILE *fp, const char *opt, double ver, int *tsys,
         else if (*flag<=2||*flag==6) {
             
             data[n].time=time;
-            data[n].sat=(unsigned char)sats[i-1];
+            data[n].sat=(unsigned char)sats[i-1]; /* this not work for v3, sat is assigned in decode_obsdata() for v3 */
             
-            /* decode obs data */
+            /* decode obs data: one sat-rcv pair at one epoch */
             if (decode_obsdata(fp,buff,ver,mask,index,data+n)&&n<MAXOBS) n++;
         }
         else if (*flag==3||*flag==4) { /* new site or header info follows */
@@ -1029,20 +1029,21 @@ static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint,
             /* utc -> gpst */
             if (*tsys==TSYS_UTC) data[i].time=utc2gpst(data[i].time);
             
-            /* save cycle-slip */
+            /* save cycle-slip: cycleslip might happened between sampling interval,
+             * so need save cs info(i.e.'LLI') to avoid cs escaping */
             saveslips(slips,data+i);
         }
-        /* screen data by time */
+        /* screen data by time: discard obs between sampling interval */
         if (n>0&&!screent(data[0].time,ts,te,tint)) continue;
         
         for (i=0;i<n;i++) {
             
-            /* restore cycle-slip [?]save and restore? due to screen data by time? (may be screen data by time doesn't means cycle slip, so save and restore it)*/
+            /* restore cycle-slip: see saveslips() */
             restslips(slips,data+i);
             
             data[i].rcv=(unsigned char)rcv;
             
-            /* save obs data */
+            /* save obs data: all epochs are saved in the 'obs' */
             if ((stat=addobsdata(obs,data+i))<0) break;
         }
     }
@@ -1471,6 +1472,7 @@ static int readrnxfp(FILE *fp, gtime_t ts, gtime_t te, double tint,
     if (!readrnxh(fp,&ver,type,&sys,&tsys,tobs,nav,sta)) return 0;
     
     /* flag=0:except for clock,1:clock */
+    /* read clk and other rinex are two independent processes */
     if ((!flag&&*type=='C')||(flag&&*type!='C')) return 0;
     
     /* read rinex body */
@@ -1498,7 +1500,8 @@ static int readrnxfile(const char *file, gtime_t ts, gtime_t te, double tint,
     
     trace(3,"readrnxfile: file=%s flag=%d index=%d\n",file,flag,index);
     
-    if (sta) init_sta(sta);
+    if (sta)
+        init_sta(sta);
     
     /* uncompress file */
     if ((cstat=rtk_uncompress(file,tmpfile))<0) {
@@ -1564,7 +1567,7 @@ extern int readrnxt(const char *file, int rcv, gtime_t ts, gtime_t te,
     trace(3,"readrnxt: file=%s rcv=%d\n",file,rcv);
     
     if (!*file) {
-        return readrnxfp(stdin,ts,te,tint,opt,0,1,&type,obs,nav,sta);
+        return readrnxfp(stdin,ts,te,tint,opt,0,1,&type,obs,nav,sta); /* fp=stdin */
     }
     for (i=0;i<MAXEXFILE;i++) {
         if (!(files[i]=(char *)malloc(1024))) {

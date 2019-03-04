@@ -52,7 +52,7 @@
 
 static pcvs_t pcvss={0};        /* receiver antenna parameters,[bug] this notation has been wroten inversely */ 
 static pcvs_t pcvsr={0};        /* satellite antenna parameters */
-static obs_t obss={0};          /* observation data */
+static obs_t obss={0};          /* observation data: for all epochs */
 static nav_t navs={0};          /* navigation data */
 static sbs_t sbss={0};          /* sbas messages */
 static lex_t lexs={0};          /* lex messages */
@@ -922,7 +922,7 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const pcvs_t *pcvs,
 {
     pcv_t *pcv;
     double pos[3],del[3];
-    int i,j,mode=PMODE_DGPS<=popt->mode&&popt->mode<=PMODE_FIXED;
+    int i,j,mode=PMODE_DGPS<=popt->mode&&popt->mode<=PMODE_FIXED; /* 0:{spp/ppp}, 1:{dgps/rtk} */
     char id[64];
     
     /* set satellite antenna parameters */
@@ -933,10 +933,12 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const pcvs_t *pcvs,
             trace(3,"no satellite antenna pcv: %s\n",id);
             continue;
         }
-        nav->pcvs[i]=*pcv;
+        nav->pcvs[i]=*pcv; /* set pcv parameter for sat_i */
     }
-    for (i=0;i<(mode?2:1);i++) {
-        if (!strcmp(popt->anttype[i],"*")) { /* set by station parameters */
+
+    /* set station parameters */
+    for (i=0;i<(mode?2:1);i++) { /* mode=0:spp/ppp, so i=1 means only for rov */
+        if (!strcmp(popt->anttype[i],"*")) {  /* case: popt->anttype[i]=="*", get antype from other source like rinex etc. */
             strcpy(popt->anttype[i],sta[i].antdes);
             if (sta[i].deltype==1) { /* xyz */
                 if (norm(sta[i].pos,3)>0.0) {
@@ -1006,6 +1008,9 @@ static FILE *openfile(const char *outfile)
 *	5)choose filter direction, choose positioning mode in procpos()
 * from:	execses_r()
 * to:	procpos()
+* param :
+*   int     n       I   number of input files
+*   char**  infile  I   filepaths of input files
 ******************************************************************************/
 static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                    const solopt_t *sopt, const filopt_t *fopt, int flag,
@@ -1134,7 +1139,9 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     
     return aborts?1:0;
 }
-/* execute processing session for each rover ---------------------------------*/
+/* execute processing session for each rover -----------------------------------
+ * param    :   int     n       I   number of input files
+ * ---------------------------------------------------------------------------*/
 static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                      const solopt_t *sopt, const filopt_t *fopt, int flag,
                      char **infile, const int *index, int n, char *outfile,
@@ -1185,7 +1192,11 @@ static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     return stat;
 }
 /* execute processing session for each base station : read precise eph
- * param    :   int     flag    I   valid keyword to be replaced(1:valid)
+ * param:
+ *    int           flag    I   valid keyword to be replaced(1:valid)
+ *    int           n       I   number of input files
+ *    char**        infile  I   filepaths of input files
+ *    const int*    index   I   file index in 'infile'
  * --------------------------------------------------------------------------*/
 static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                      const solopt_t *sopt, const filopt_t *fopt, int flag,
