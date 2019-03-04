@@ -642,12 +642,12 @@ static void readpreceph(char **infile, int n, const prcopt_t *prcopt,
          trace(1,"error : sbas ephem memory allocation");
          return;
     }
-    for (i=0;i<nav->ns;i++) nav->seph[i]=seph0;
+    for (i=0;i<nav->ns;i++) nav->seph[i]=seph0; /* sbas initializing */
     
     /* set rtcm file and initialize rtcm struct */
-    rtcm_file[0]=rtcm_path[0]='\0'; fp_rtcm=NULL;
+    rtcm_file[0]=rtcm_path[0]='\0'; fp_rtcm=NULL; /* these are static varibles */
     
-    for (i=0;i<n;i++) {
+    for (i=0;i<n;i++) { /* when rtcm3 files input, initialize 'rtcm' */
         if ((ext=strrchr(infile[i],'.'))&&
             (!strcmp(ext,".rtcm3")||!strcmp(ext,".RTCM3"))) {/*rtcm file*/
             strcpy(rtcm_file,infile[i]);
@@ -719,7 +719,7 @@ static int readobsnav(gtime_t ts, gtime_t te, double ti, char **infile,
         return 0;
     }
     /* sort observation data */
-    nepoch=sortobs(obs);
+    nepoch=sortobs(obs); /* static variable: nepoch */
     
     /* delete duplicated ephemeris */
     uniqnav(nav);
@@ -1094,7 +1094,7 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
         return 0;
     }
 	/* initialize the loop vars */
-    iobsu=iobsr=isbs=ilex=revs=aborts=0;
+    iobsu=iobsr=isbs=ilex=revs=aborts=0; /* static variables */
     
 	/* choose filter mode */
     if (popt_.mode==PMODE_SINGLE||popt_.soltype==0) {
@@ -1209,7 +1209,7 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     
     trace(3,"execses_b: n=%d outfile=%s\n",n,outfile);
     
-    /* read prec ephemeris and sbas data */
+    /* read prec ephemeris and sbas data:[q] why firstly read precise eph */
     readpreceph(infile,n,popt,&navs,&sbss,&lexs);
     
     for (i=0;i<n;i++) if (strstr(infile[i],"%b")) break;

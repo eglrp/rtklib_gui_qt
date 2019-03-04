@@ -697,7 +697,7 @@ typedef struct {        /* TEC grid type */
     float *rms;         /* RMS values (tecu) */
 } tec_t;
 
-typedef struct {        /* satellite fcb data type */ /* [q] what is fcb */
+typedef struct {        /* satellite fcb data type */
     gtime_t ts,te;      /* start/end time (GPST) */
     double bias[MAXSAT][3]; /* fcb value   (cyc) */
     double std [MAXSAT][3]; /* fcb std-dev (cyc) */

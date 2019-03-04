@@ -402,14 +402,14 @@ static int addfcb(nav_t *nav, gtime_t ts, gtime_t te, int sat,
     fcbd_t *nav_fcb;
     int i,j;
     
-    if (nav->nf>0&&fabs(timediff(ts,nav->fcb[nav->nf-1].ts))<=1e-3) {
+    if (nav->nf>0&&fabs(timediff(ts,nav->fcb[nav->nf-1].ts))<=1e-3) { /* not completed epoch */
         for (i=0;i<3;i++) {
             nav->fcb[nav->nf-1].bias[sat-1][i]=bias[i];
             nav->fcb[nav->nf-1].std [sat-1][i]=std [i];
         }
         return 1;
     }
-    if (nav->nf>=nav->nfmax) {
+    if (nav->nf>=nav->nfmax) { /* need reallocate space */
         nav->nfmax=nav->nfmax<=0?2048:nav->nfmax*2;
         if (!(nav_fcb=(fcbd_t *)realloc(nav->fcb,sizeof(fcbd_t)*nav->nfmax))) {
             free(nav->fcb); nav->nf=nav->nfmax=0;
@@ -417,7 +417,7 @@ static int addfcb(nav_t *nav, gtime_t ts, gtime_t te, int sat,
         }
         nav->fcb=nav_fcb;
     }
-    for (i=0;i<MAXSAT;i++) for (j=0;j<3;j++) {
+    for (i=0;i<MAXSAT;i++) for (j=0;j<3;j++) { /* initialization for new epoch */
         nav->fcb[nav->nf].bias[i][j]=nav->fcb[nav->nf].std[i][j]=0.0;
     }
     for (i=0;i<3;i++) {
@@ -457,7 +457,7 @@ static int readfcbf(const char *file, nav_t *nav)
     fclose(fp);
     return 1;
 }
-/* compare satellite fcb -----------------------------------------------------*/
+/* compare satellite fcb: used for sort --------------------------------------*/
 static int cmpfcb(const void *p1, const void *p2)
 {
     fcbd_t *q1=(fcbd_t *)p1,*q2=(fcbd_t *)p2;

@@ -1902,7 +1902,7 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     
     time=rtk->sol.time; /* previous epoch */
     
-    /* 1.get rov appoxi pos by SPP */
+    /* 1.SPP or get rov appoxi pos by SPP */
     if (!pntpos(obs,nu,nav,&rtk->opt,&rtk->sol,NULL,rtk->ssat,msg)) {
         errmsg(rtk,"point pos error (%s)\n",msg);
         
@@ -1914,7 +1914,7 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     if (time.time!=0) 
 		rtk->tt=timediff(rtk->sol.time,time);
     
-    /* 2.SPP */
+    /* 2.ouput SPP */
     if (opt->mode==PMODE_SINGLE) {
         outsolstat(rtk);
         return 1;
@@ -1929,7 +1929,8 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     if (opt->mode>=PMODE_PPP_KINEMA) {
         pppos(rtk,obs,nu,nav);
         outsolstat(rtk);
-        return 1; /* for PPP, if SPP is failed also return 1? or this case is impossible? */
+        return 1; /* [q]for PPP, if SPP is failed also return 1? or this case is impossible? */
+                  /* return value is ignored by rtksvrthread()@rtksvr in rtknavi.exe */
     }
 
     /* 4.RTK */

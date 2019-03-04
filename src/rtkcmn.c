@@ -2681,14 +2681,15 @@ extern int sortobs(obs_t *obs)
         if (obs->data[i].sat!=obs->data[j].sat||
             obs->data[i].rcv!=obs->data[j].rcv||
             timediff(obs->data[i].time,obs->data[j].time)!=0.0) {
-            obs->data[++j]=obs->data[i];
+            obs->data[++j]=obs->data[i]; /* index j for undeplicated data; delete by overwriting duplicated data */
         }
     }
-    obs->n=j+1;
+    obs->n=j+1;/* obs->n is number while j is index starting from 0, so need +1 */
     
-    for (i=n=0;i<obs->n;i=j,n++) {
+    /* n: # of epoch, which != obs->n */
+    for (i=n=0;i<obs->n;i=j,n++) { /* note "i=j" in loop update sentence */
         for (j=i+1;j<obs->n;j++) {
-            if (timediff(obs->data[j].time,obs->data[i].time)>DTTOL) break;
+            if (timediff(obs->data[j].time,obs->data[i].time)>DTTOL) break;/* break for new epoch */
         }
     }
     return n;

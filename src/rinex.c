@@ -1044,7 +1044,7 @@ static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint,
             data[i].rcv=(unsigned char)rcv;
             
             /* save obs data: all epochs are saved in the 'obs' */
-            if ((stat=addobsdata(obs,data+i))<0) break;
+            if ((stat=addobsdata(obs,data+i))<0) break; /* get return value=-1, means realloc error */
         }
     }
     trace(4,"readrnxobs: nobs=%d stat=%d\n",obs->n,stat);
