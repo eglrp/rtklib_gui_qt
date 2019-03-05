@@ -175,8 +175,14 @@ static int nextobsf(const obs_t *obs, int *i, int rcv)
 {
     double tt;
     int n;
-    
+    /* obs sort order('<'=former): time<rcv<sat. e.g.:
+     * {t1_rov_sat1,t1_rov_sat2,...,t1_ref_sat1,t1_ref_sat2,...,
+     *  t2_rov_sat1,t2_rov_sat2,...,t2_ref_sat1,t2_ref_sat2}     */
+
+    /* 1.move (*i) to next epoch index */
     for (;*i<obs->n;(*i)++) if (obs->data[*i].rcv==rcv) break;
+
+    /* 2.get # of obs in next epoch */
     for (n=0;*i+n<obs->n;n++) {
         tt=timediff(obs->data[*i+n].time,obs->data[*i].time);
         if (obs->data[*i+n].rcv!=rcv||tt>DTTOL) break;
@@ -251,15 +257,17 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
 		/* obs data of user */
         if ((nu=nextobsf(&obss,&iobsu,1))<=0) 
 			return -1;
-        if (popt->intpref) {
+        if (popt->intpref) { /* [q]xian bu kan */
             for (;(nr=nextobsf(&obss,&iobsr,2))>0;iobsr+=nr)
                 if (timediff(obss.data[iobsr].time,obss.data[iobsu].time)>-DTTOL) break;
         }
         else {
-            for (i=iobsr;(nr=nextobsf(&obss,&i,2))>0;iobsr=i,i+=nr)
+            for (i=iobsr;(nr=nextobsf(&obss,&i,2))>0;iobsr=i,i+=nr) /* Comma expression: ->; i increased in 'nextobsf()' and by 'i+=nr' */
+                /* 1) at first rov & ref obs are synced by obs sorting;
+                 * 2) i point to next epoch of ref */
                 if (timediff(obss.data[i].time,obss.data[iobsu].time)>DTTOL) break;
         }
-		/* obs data of refer */
+        /* obs data of refer [q]*/
         nr=nextobsf(&obss,&iobsr,2);
         if (nr<=0) {
             nr=nextobsf(&obss,&iobsr,2);
@@ -373,7 +381,7 @@ static void procpos(FILE *fp, const prcopt_t *popt, const solopt_t *sopt,
     gtime_t time={0};
     sol_t sol={{0}}; 
     rtk_t rtk;
-    obsd_t obs[MAXOBS*2]; /* for rover and base */
+    obsd_t obs[MAXOBS*2]; /* for rover and base. [bug]MAXOBS=64 might too small for 4sys */
     double rb[3]={0};
     int i,nobs,n,solstatic,pri[]={0,1,2,3,4,5,1,6}; /*  */
     
@@ -678,12 +686,16 @@ static void freepreceph(nav_t *nav, sbs_t *sbs, lex_t *lex)
     if (fp_rtcm) fclose(fp_rtcm);
     free_rtcm(&rtcm);
 }
-/* read obs and nav data -----------------------------------------------------*/
+/* read obs and nav data -----------------------------------------------------
+ * args:    int     n       I       # of input files
+ * -------------------------------------------------------------------------*/
 static int readobsnav(gtime_t ts, gtime_t te, double ti, char **infile,
                       const int *index, int n, const prcopt_t *prcopt,
                       obs_t *obs, nav_t *nav, sta_t *sta)
 {
-    int i,j,ind=0,nobs=0,rcv=1;
+    int i,j,ind=0,/* used to distinguish rcv, can be also intepreted as rcv index */
+            nobs=0,
+            rcv=1;/* 1:rov, 2:base, other value: non-sense */
     
     trace(3,"readobsnav: ts=%s n=%d\n",time_str(ts,0),n);
     
@@ -696,9 +708,9 @@ static int readobsnav(gtime_t ts, gtime_t te, double ti, char **infile,
     for (i=0;i<n;i++) {
         if (checkbrk("")) return 0; /* judge abort */
         
-        if (index[i]!=ind) {
-            if (obs->n>nobs) rcv++;
-            ind=index[i]; nobs=obs->n; 
+        if (index[i]!=ind) { /* see note(1) of postpos(): only the 1st obs file in input files is recognized as rov data*/
+            if (obs->n>nobs) rcv++; /* means read obs from other rcv. see note(1) of postpos() */
+            ind=index[i]; nobs=obs->n; /* all obs data stored in 'obs', so log 'obs->n' to judge from which rcv it read */
         }
         /* read rinex obs and nav file */
         if (readrnxt(infile[i],rcv,ts,te,ti,prcopt->rnxopt[rcv<=1?0:1],obs,nav,
@@ -718,7 +730,7 @@ static int readobsnav(gtime_t ts, gtime_t te, double ti, char **infile,
         trace(1,"\n");
         return 0;
     }
-    /* sort observation data */
+    /* sort observation data: */
     nepoch=sortobs(obs); /* static variable: nepoch */
     
     /* delete duplicated ephemeris */
@@ -1011,6 +1023,7 @@ static FILE *openfile(const char *outfile)
 * param :
 *   int     n       I   number of input files
 *   char**  infile  I   filepaths of input files
+*   int     flag    I   whether create output files for this session
 ******************************************************************************/
 static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                    const solopt_t *sopt, const filopt_t *fopt, int flag,
@@ -1070,13 +1083,13 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     }
     /* rover/reference fixed position */
     if (popt_.mode==PMODE_FIXED) {
-        if (!antpos(&popt_,1,&obss,&navs,stas,fopt->stapos)) {
+        if (!antpos(&popt_,1,&obss,&navs,stas,fopt->stapos)) { /* 1: rov */
             freeobsnav(&obss,&navs);
             return 0;
         }
     }
     else if (PMODE_DGPS<=popt_.mode&&popt_.mode<=PMODE_STATIC) { /*PMODE_DGPS, PMODE_KINEMA, PMODE_STATIC*/
-        if (!antpos(&popt_,2,&obss,&navs,stas,fopt->stapos)) {
+        if (!antpos(&popt_,2,&obss,&navs,stas,fopt->stapos)) { /* 1: base */
             freeobsnav(&obss,&navs);
             return 0;
         }
@@ -1140,7 +1153,10 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     return aborts?1:0;
 }
 /* execute processing session for each rover -----------------------------------
+ * procedure: replace rov name in filepaths
  * param    :   int     n       I   number of input files
+ *              char    *rov    I   rover id list        (separated by " ")
+ *              int     flag    I   whether create output files for this session
  * ---------------------------------------------------------------------------*/
 static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                      const solopt_t *sopt, const filopt_t *fopt, int flag,
@@ -1155,7 +1171,7 @@ static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     
     for (i=0;i<n;i++) if (strstr(infile[i],"%r")) break;
     
-    if (i<n) { /* include rover keywords */
+    if (i<n) { /* include rover keywords: %r */
         if (!(rov_=(char *)malloc(strlen(rov)+1))) return 0;
         strcpy(rov_,rov);
         
@@ -1166,9 +1182,9 @@ static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
             }
         }
         for (p=rov_;;p=q+1) { /* for each rover */
-            if ((q=strchr(p,' '))) *q='\0';
+            if ((q=strchr(p,' '))) *q='\0'; /* loop step moving by strchr() */
             
-            if (*p) {
+            if (*p) { /* have rov to be processed */
                 strcpy(proc_rov,p);
                 if (ts.time) time2str(ts,s,0); else *s='\0';
                 if (checkbrk("reading    : %s",s)) {
@@ -1181,22 +1197,26 @@ static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                 /* execute processing session */
                 stat=execses(ts,te,ti,popt,sopt,fopt,flag,ifile,index,n,ofile);
             }
-            if (stat==1||!q) break;
+            if (stat==1|| /* stat=1: abort */
+                    !q)
+                break;
         }
         free(rov_); for (i=0;i<n;i++) free(ifile[i]);
     }
-    else {
+    else {/* no rover keywords: %r */
         /* execute processing session */
         stat=execses(ts,te,ti,popt,sopt,fopt,flag,infile,index,n,outfile);
     }
     return stat;
 }
-/* execute processing session for each base station : read precise eph
+/* execute processing session for each base station
+ * procedure: read precise eph, replace base name in filepaths
  * param:
- *    int           flag    I   valid keyword to be replaced(1:valid)
+ *    int           flag    I   whether create output files for this session
  *    int           n       I   number of input files
  *    char**        infile  I   filepaths of input files
  *    const int*    index   I   file index in 'infile'
+ *    char          *base   I   base station id list (separated by " ")
  * --------------------------------------------------------------------------*/
 static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                      const solopt_t *sopt, const filopt_t *fopt, int flag,
@@ -1209,12 +1229,13 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     
     trace(3,"execses_b: n=%d outfile=%s\n",n,outfile);
     
-    /* read prec ephemeris and sbas data:[q] why firstly read precise eph */
+    /* read prec ephemeris and sbas data */
     readpreceph(infile,n,popt,&navs,&sbss,&lexs);
     
+    /* find whether input filepath contains keyword */
     for (i=0;i<n;i++) if (strstr(infile[i],"%b")) break;
     
-    if (i<n) { /* include base station keywords */
+    if (i<n) { /* include base station keywords: "%b" */
         if (!(base_=(char *)malloc(strlen(base)+1))) {
             freepreceph(&navs,&sbss,&lexs);
             return 0;
@@ -1229,10 +1250,10 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
             }
         }
         for (p=base_;;p=q+1) { /* for each base station */
-            if ((q=strchr(p,' '))) *q='\0';
+            if ((q=strchr(p,' '))) *q='\0'; /* replace ' ' with '\0', e.g.: p=="rov1 ref1" -> p="rov1\0ref1", so p point to "rov1" */
             
             if (*p) {
-                strcpy(proc_base,p);
+                strcpy(proc_base,p); /* static */
                 if (ts.time) time2str(ts,s,0); else *s='\0';
                 if (checkbrk("reading    : %s",s)) {
                     stat=1;
@@ -1247,7 +1268,7 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
         }
         free(base_); for (i=0;i<n;i++) free(ifile[i]);
     }
-    else {
+    else {/* no keywords: "%b" */
         stat=execses_r(ts,te,ti,popt,sopt,fopt,flag,infile,index,n,outfile,rov);
     }
     /* free prec ephemeris and sbas data */
@@ -1270,13 +1291,15 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 *          char   *rov      I   rover id list        (separated by " ")
 *          char   *base     I   base station id list (separated by " ")
 * return : status (0:ok,0>:error,1:aborted)
-* notes  : input files should contain observation data, navigation data, precise 
+* notes  : 1) input files should contain observation data, navigation data, precise
 *          ephemeris/clock (optional), sbas log file (optional), ssr message
-*          log file (optional) and tec grid file (optional). only the first 
-*          observation data file in the input files is recognized as the rover
-*          data.
+*          log file (optional) and tec grid file (optional).
+*          Only the first observation data file in the input files is recognized as the rover data.
+*          Futhermore, obs data should only specified in field 'RINEX OBS' and
+*          'RINEX OBS: Base Station'; if they are specified in field 'RINEX NAV/CLK...',
+*          it might casuse exceptional consequences.
 *
-*          the type of an input file is recognized by the file extention as ]
+*          2) the type of an input file is recognized by the file extention as ]
 *          follows:
 *              .sp3,.SP3,.eph*,.EPH*: precise ephemeris (sp3c)
 *              .sbs,.SBS,.ems,.EMS  : sbas message log files (rtklib or ems)
@@ -1286,19 +1309,24 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 *              .fcb,.FCB            : satellite fcb
 *              others               : rinex obs, nav, gnav, hnav, qnav or clock
 *
-*          inputs files can include wild-cards (*). if an file includes
+*          3) inputs files can include wild-cards (*). if an file includes
 *          wild-cards, the wild-card expanded multiple files are used.
 *
-*          inputs files can include keywords. if an file includes keywords,
+*          4) inputs files can include keywords. if an file includes keywords,
 *          the keywords are replaced by date, time, rover id and base station
 *          id and multiple session analyses run. refer reppath() for the
 *          keywords.
 *
-*          the output file can also include keywords. if the output file does
+*          5) the output file can also include keywords. if the output file does
 *          not include keywords. the results of all multiple session analyses
 *          are output to a single output file.
 *
-*          ssr corrections are valid only for forward estimation.
+*          6) ssr corrections are valid only for forward estimation.
+*
+*          7) for multi-session processing, if you want create output files for
+*          each session, you should use time-relevant keywords.
+*
+*          8) rtcm3 file only support %r %b keywords, do not support time-relevant keywords.
 *-----------------------------------------------------------------------------*/
 extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                    const prcopt_t *popt, const solopt_t *sopt,
@@ -1312,10 +1340,11 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
     
     trace(3,"postpos : ti=%.0f tu=%.0f n=%d outfile=%s\n",ti,tu,n,outfile);
     
-    /* open processing session. one session=all units. */
+    /* open processing session. one session=all units. read: atx\geoid files */
     if (!openses(popt,sopt,fopt,&navs,&pcvss,&pcvsr)) return -1;
     
-    if (ts.time!=0&&te.time!=0&&tu>=0.0) {/* unit-wise data processing */
+    if (ts.time!=0&&te.time!=0&&
+            tu>=0.0) {/* unit-wise data processing: tu only can be enabled (at GUI) when both ts&te>0  */
         if (timediff(te,ts)<0.0) {
             showmsg("error : no period");
             closeses(&navs,&pcvss,&pcvsr);
@@ -1340,19 +1369,19 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
             if (timediff(tts,ts)<0.0) tts=ts; /* trim unit start time */
             if (timediff(tte,te)>0.0) tte=te; /* trim unit end time */
             
-            strcpy(proc_rov ,"");
-            strcpy(proc_base,"");
+            strcpy(proc_rov ,""); strcpy(proc_base,""); /* clear static variables for each session */
+
             if (checkbrk("reading    : %s",time_str(tts,0))) {
                 stat=1;
                 break;
             }
 
-            for (j=k=nf=0;j<n;j++) {
+            for (j=k=nf=0;j<n;j++) {/* n: # of input files */
                 
                 ext=strrchr(infile[j],'.');
                 
                 if (ext&&(!strcmp(ext,".rtcm3")||!strcmp(ext,".RTCM3"))) {/* rtcm3 files */
-                    strcpy(ifile[nf++],infile[j]);
+                    strcpy(ifile[nf++],infile[j]); /* add rtcm3 files to 'ifile'; note rtcm file do not reppath */
                 }
                 else {
                     /* include next day precise ephemeris or rinex brdc nav */
@@ -1366,6 +1395,11 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                     }
                     nf+=reppaths(infile[j],ifile+nf,MAXINFILE-nf,tts,ttte,"","");
                 }
+
+                /* 1) due to one obs may divide into sevral parts for multi-session process
+                 * i.e. one file may used into different session processing, so need file index for every session
+                 * 2) 'infile': actually input filepaths;
+                 *     'ifile': filepaths after dividing for multi-session processing */
                 while (k<nf) index[k++]=j;
                 
                 if (nf>=MAXINFILE) {
@@ -1373,8 +1407,12 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                     break;
                 }
             }
-            if (!reppath(outfile,ofile,tts,"","")&&i>0) 
-				flag=0; /* no valid keyword to be replaced in file */
+            if (!reppath(outfile,ofile,tts,"","")&& /* no valid keyword to be replaced in output file */
+                    i>0)                            /* after first session */
+                /* see note 7)
+                 * flag=0: will not create pos/trace/stat output file after the first session
+                 * flag=1: create these output file for every session */
+                flag=0;
             
             /* execute processing session */
             stat=execses_b(tts,tte,ti,popt,sopt,fopt,flag,ifile,index,nf,ofile,

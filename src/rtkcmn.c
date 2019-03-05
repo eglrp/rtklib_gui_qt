@@ -2423,6 +2423,7 @@ extern int readblq(const char *file, const char *sta, double *odisp)
 /* read earth rotation parameters ----------------------------------------------
 * read earth rotation parameters
 * args   : char   *file       I   IGS ERP file (IGS ERP ver.2)
+*                                 https://lists.igs.org/pipermail/igsmail/1998/003315.html
 *          erp_t  *erp        O   earth rotation parameters
 * return : status (1:ok,0:file open error)
 *-----------------------------------------------------------------------------*/
@@ -2516,7 +2517,9 @@ extern int geterp(const erp_t *erp, gtime_t time, double *erpv)
     erpv[3]=(1.0-a)*erp->data[j].lod    +a*erp->data[j+1].lod;
     return 1;
 }
-/* compare ephemeris ---------------------------------------------------------*/
+/* compare ephemeris ---------------------------------------------------------
+ * sort order: ttr< toe< sat
+ * -------------------------------------------------------------------------*/
 static int cmpeph(const void *p1, const void *p2)
 {
     eph_t *q1=(eph_t *)p1,*q2=(eph_t *)p2;
@@ -2652,7 +2655,9 @@ extern void uniqnav(nav_t *nav)
         nav->lam[i][j]=satwavelen(i+1,j,nav);
     }
 }
-/* compare observation data -------------------------------------------------*/
+/* compare observation data -------------------------------------------------
+ * return: negetive value means p1 is sorted ahead of p2
+ * ------------------------------------------------------------------------*/
 static int cmpobs(const void *p1, const void *p2)
 {
     obsd_t *q1=(obsd_t *)p1,*q2=(obsd_t *)p2;
@@ -2665,6 +2670,7 @@ static int cmpobs(const void *p1, const void *p2)
 * sort and unique observation data by time, rcv, sat
 * args   : obs_t *obs    IO     observation data
 * return : number of epochs
+* note   : sort order:    time, rcv, sat: ascending sort
 *-----------------------------------------------------------------------------*/
 extern int sortobs(obs_t *obs)
 {
@@ -2686,7 +2692,8 @@ extern int sortobs(obs_t *obs)
     }
     obs->n=j+1;/* obs->n is number while j is index starting from 0, so need +1 */
     
-    /* n: # of epoch, which != obs->n */
+    /* compute n. n: # of epoch
+     * note: n != obs->n */
     for (i=n=0;i<obs->n;i=j,n++) { /* note "i=j" in loop update sentence */
         for (j=i+1;j<obs->n;j++) {
             if (timediff(obs->data[j].time,obs->data[i].time)>DTTOL) break;/* break for new epoch */
@@ -3196,12 +3203,18 @@ extern void createdir(const char *path)
     mkdir(buff,0777);
 #endif
 }
-/* replace string ------------------------------------------------------------*/
+/* replace string --------------------------------------------------------------
+ * note: repstr will not check boundry and might cause array out of bound error
+ * ---------------------------------------------------------------------------*/
 static int repstr(char *str, const char *pat, const char *rep)
 {
     int len=(int)strlen(pat);
     char buff[1024],*p,*q,*r;
     
+    /* str="this is example, here is pattern.this is rest str"     buff="this is buff."     *
+    *       ^                        ^      ^                            ^                  *
+    *       |                        |      |                            |                  *
+    *       p                        q    q+len                          r                  */
     for (p=str,r=buff;*p;p=q+len) {
         if (!(q=strstr(p,pat))) break;
         strncpy(r,p,q-p);
@@ -3209,8 +3222,8 @@ static int repstr(char *str, const char *pat, const char *rep)
         r+=sprintf(r,"%s",rep);
     }
     if (p<=str) return 0;
-    strcpy(r,p);
-    strcpy(str,buff);
+    strcpy(r,p); /* copy rest string to r with '\0' to the end. */
+    strcpy(str,buff); /* need carefully use, otherwise it might cause out of bound error */
     return 1;
 }
 /* replace keywords in file path -----------------------------------------------
@@ -3301,7 +3314,7 @@ extern int reppaths(const char *path, char *rpath[], int nmax, gtime_t ts,
                     gtime_t te, const char *rov, const char *base)
 {
     gtime_t time;
-    double tow,tint=86400.0;
+    double tow,tint=86400.0;/* 1d */
     int i,n=0,week;
     
     trace(3,"reppaths: path =%s nmax=%d rov=%s base=%s\n",path,nmax,rov,base);
@@ -3316,7 +3329,7 @@ extern int reppaths(const char *path, char *rpath[], int nmax, gtime_t ts,
     
     while (timediff(time,te)<=0.0&&n<nmax) {
         reppath(path,rpath[n],time,rov,base);
-        if (n==0||strcmp(rpath[n],rpath[n-1])) n++;
+        if (n==0||strcmp(rpath[n],rpath[n-1])) n++; /* avoid invalid or duplicated replacement */
         time=timeadd(time,tint);
     }
     for (i=0;i<n;i++) trace(3,"reppaths: rpath=%s\n",rpath[i]);

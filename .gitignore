@@ -3,6 +3,7 @@
 *.ini
 *.local
 *.user
+*.note
 Release
 Release_Build
 Debug_Build
