@@ -196,8 +196,8 @@ extern int input_rtcm2(rtcm_t *rtcm, unsigned char data)
 }
 /* input rtcm 3 message from stream --------------------------------------------
 * fetch next rtcm 3 message and input a message from byte stream
-* args   : rtcm_t *rtcm IO   rtcm control struct
-*          unsigned char data I stream data (1 byte)
+* args   : rtcm_t           *rtcm   IO      rtcm control struct
+*          unsigned char    data    I       stream data (1 byte)
 * return : status (-1: error message, 0: no message, 1: input observation data,
 *                  2: input ephemeris, 5: input station pos/ant parameters,
 *                  10: input ssr messages)
@@ -239,16 +239,19 @@ extern int input_rtcm2(rtcm_t *rtcm, unsigned char data)
 *              6     : 1076      1086      1096      1116      1126      1106
 *              7     : 1077      1087      1097      1117      1127      1107
 *
-*          SSR OBT   : 1057      1063      1240*     1246*     1258*       -
-*              CLK   : 1058      1064      1241*     1247*     1259*       -
-*              BIAS  : 1059      1065      1242*     1248*     1260*       -
-*              OBTCLK: 1060      1066      1243*     1249*     1261*       -
-*              URA   : 1061      1067      1244*     1250*     1262*       -
-*              HRCLK : 1062      1068      1245*     1251*     1263*       -
+*          SSR OBT   : 1057      1063      1240*     1246*     1258*     1252\
+*              CLK   : 1058      1064      1241*     1247*     1259*     1253\
+*              BIAS  : 1059      1065      1242*     1248*     1260*     1254\
+*              OBTCLK: 1060      1066      1243*     1249*     1261*     1255\
+*              URA   : 1061      1067      1244*     1250*     1262*     1256\
+*              HRCLK : 1062      1068      1245*     1251*     1263*     1257\
+*              PBIAS : 1265\     1266\     1267\     1268\     1270\     1269\
+*------------------------------------------------------------------------------
+*          SSR VTEC  : 1264\ (all system)
 *
 *          ANT INFO  : 1005 1006 1007 1008 1033
 *         ----------------------------------------------------------------------
-*                                                    (* draft, ~ only encode)
+*                                    (* draft, ~ only encode, \ not implement)
 *
 *          for MSM observation data with multiple signals for a frequency,
 *          a signal is selected according to internal priority. to select

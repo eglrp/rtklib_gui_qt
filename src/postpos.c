@@ -72,8 +72,8 @@ static int isolf=0;             /* current forward solutions index */
 static int isolb=0;             /* current backward solutions index */
 static char proc_rov [64]="";   /* rover for current processing */
 static char proc_base[64]="";   /* base station for current processing */
-static char rtcm_file[1024]=""; /* rtcm data file */
-static char rtcm_path[1024]=""; /* rtcm data path */
+static char rtcm_file[1024]=""; /* rtcm data file: filepath of input rtcm3 file */
+static char rtcm_path[1024]=""; /* rtcm data path: filepath of opened rtcm3 file, it equal to 'rtcm_file' or expanded 'rtcm_file'. */
 static rtcm_t rtcm;             /* rtcm control struct */
 static FILE *fp_rtcm=NULL;      /* rtcm data file pointer */
 
@@ -170,7 +170,12 @@ static void outheader(FILE *fp, char **file, int n, const prcopt_t *popt,
     
     outsolhead(fp,sopt);
 }
-/* search next observation data index ----------------------------------------*/
+/* search next observation data index ----------------------------------------
+ * retrun: n = number of next epoch.
+ *         If n=0 means:
+ *         1) do not have receiver id = rcv;
+ *         2) receiver rcv do not have obs in next epoch
+ * -------------------------------------------------------------------------*/
 static int nextobsf(const obs_t *obs, int *i, int rcv)
 {
     double tt;
@@ -210,14 +215,14 @@ static void update_rtcm_ssr(gtime_t time)
     /* open or swap rtcm file */
     reppath(rtcm_file,path,time,"","");
     
-    if (strcmp(path,rtcm_path)) {
+    if (strcmp(path,rtcm_path)) { /* see definition of 'rtcm_path' and 'rtcm_file' */
         strcpy(rtcm_path,path);
         
         if (fp_rtcm) fclose(fp_rtcm);
         fp_rtcm=fopen(path,"rb");
         if (fp_rtcm) {
             rtcm.time=time;
-            input_rtcm3f(&rtcm,fp_rtcm);
+            input_rtcm3f(&rtcm,fp_rtcm);/* first read */
             trace(2,"rtcm file open: %s\n",path);
         }
     }
@@ -254,29 +259,32 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
         }
     }
     if (!revs) { /* input forward data */
-		/* obs data of user */
+        /* 1.get user obs */
         if ((nu=nextobsf(&obss,&iobsu,1))<=0) 
 			return -1;
-        if (popt->intpref) { /* [q]xian bu kan */
-            for (;(nr=nextobsf(&obss,&iobsr,2))>0;iobsr+=nr)
+        if (popt->intpref) {
+            for (;(nr=nextobsf(&obss,&iobsr,2))>0;iobsr+=nr) /* *****movement of iobsr**** */
                 if (timediff(obss.data[iobsr].time,obss.data[iobsu].time)>-DTTOL) break;
         }
         else {
-            for (i=iobsr;(nr=nextobsf(&obss,&i,2))>0;iobsr=i,i+=nr) /* Comma expression: ->; i increased in 'nextobsf()' and by 'i+=nr' */
-                /* 1) at first rov & ref obs are synced by obs sorting;
-                 * 2) i point to next epoch of ref */
+            /* 1) tips: obs sort order, see sortobs() in rtkcmn.c
+             * 2) i point to next epoch of ref
+             * 3) nr=0 : no obs of ref at or after this epoch, nr>0: ref have obs at or after this epoch */
+            for (i=iobsr;(nr=nextobsf(&obss,&i,2))>0;iobsr=i,i+=nr) /* *****movement of iobsr**** */
                 if (timediff(obss.data[i].time,obss.data[iobsu].time)>DTTOL) break;
         }
-        /* obs data of refer [q]*/
-        nr=nextobsf(&obss,&iobsr,2);
-        if (nr<=0) {
+        /* 2.get ref obs at or after this epoch:
+        * assume having 'obss' like: {r1_t1, (lack r2_t1,) r1_t2, r2_t2, r1_t3, r2_t3, ...}
+        * it will get obs {r1_t1, r2_t2}, where obs of ref is after of rov */
+        nr=nextobsf(&obss,&iobsr,2); /* note that: pointer is 'iobsr' instead of 'i' */
+        if (nr<=0) { /* [q]???, if nr=0 means no obs of ref, so do it again still make nothing happened. */
             nr=nextobsf(&obss,&iobsr,2);
         }
         for (i=0;i<nu&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsu+i];
         for (i=0;i<nr&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsr+i];
-        iobsu+=nu;
+        iobsu+=nu;/* *****movement of iobsu**** */
         
-        /* update sbas corrections */
+        /* 3.1 update sbas corrections */
         while (isbs<sbss.n) {
             time=gpst2time(sbss.msgs[isbs].week,sbss.msgs[isbs].tow);
             
@@ -286,14 +294,14 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
             if (timediff(time,obs[0].time)>-1.0-DTTOL) break;
             isbs++;
         }
-        /* update lex corrections */
+        /* 3.2 update lex corrections */
         while (ilex<lexs.n) {
             if (lexupdatecorr(lexs.msgs+ilex,&navs,&time)) {
                 if (timediff(time,obs[0].time)>-1.0-DTTOL) break;
             }
             ilex++;
         }
-        /* update rtcm ssr corrections */
+        /* 3.3 update rtcm ssr corrections */
         if (*rtcm_file) {
             update_rtcm_ssr(obs[0].time);
         }
@@ -393,6 +401,7 @@ static void procpos(FILE *fp, const prcopt_t *popt, const solopt_t *sopt,
     rtkinit(&rtk,popt);
     rtcm_path[0]='\0';
     
+    /* 1.input obs */
     while ((nobs=inputobs(obs,rtk.sol.stat,popt))>=0) {
         
         /* exclude satellites */
@@ -405,7 +414,7 @@ static void procpos(FILE *fp, const prcopt_t *popt, const solopt_t *sopt,
         }
         if (n<=0) continue; /* skip the epoch without valid obs */
         
-        /* carrier-phase bias correction */
+        /* 2.carrier-phase bias correction */
         if (navs.nf>0) {
             corr_phase_bias_fcb(obs,n,&navs);
         }
@@ -418,10 +427,10 @@ static void procpos(FILE *fp, const prcopt_t *popt, const solopt_t *sopt,
             for (i=0;i<n;i++) obs[i].L[1]=obs[i].P[1]=0.0;
         }
 #endif
-		/* positioning */
+        /* 3.positioning */
         if (!rtkpos(&rtk,obs,n,&navs)) continue;
         
-		/* update filter after get a new sol */
+        /* 4.update filter after get a new sol */
         if (mode==0) { /* forward/backward */
             if (!solstatic) { /* output sol every epoch */
                 outsol(fp,&rtk.sol,rtk.rb,sopt);
