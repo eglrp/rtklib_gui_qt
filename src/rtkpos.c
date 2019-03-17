@@ -1900,7 +1900,7 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     for (nu=0;nu   <n&&obs[nu   ].rcv==1;nu++) ;
     for (nr=0;nu+nr<n&&obs[nu+nr].rcv==2;nr++) ;
     
-    time=rtk->sol.time; /* previous epoch */
+    time=rtk->sol.time; /* previous epoch: sol.time will also update when res=SOLQ_NONE */
     
     /* 1.SPP or get rov appoxi pos by SPP */
     if (!pntpos(obs,nu,nav,&rtk->opt,&rtk->sol,NULL,rtk->ssat,msg)) {

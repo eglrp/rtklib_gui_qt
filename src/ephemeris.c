@@ -503,7 +503,7 @@ static seph_t *selseph(gtime_t time, int sat, const nav_t *nav)
  * procedure:
  *      1) select ephemeris eph_t at time teph
  *      2) use ephemeirs and its model to get clock correction: ?eph2clk()
- * return:      dts     double      satellite clock
+ * return:      double      dts     satellite clock, without relativeity correction
 ----------------------------------------------------------------------------*/
 static int ephclk(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
                   double *dts)
@@ -648,17 +648,18 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
         *svh=-1;
         return 0;
     }
-    t1=timediff(time,ssr->t0[0]);
-    t2=timediff(time,ssr->t0[1]);
+    t1=timediff(time,ssr->t0[0]); /*eph*/
+    t2=timediff(time,ssr->t0[1]); /*clk*/
     t3=timediff(time,ssr->t0[2]);
     
-    /* ssr orbit and clock correction (ref [4]) */
+    /* ssr outlier simple detection */
     if (fabs(t1)>MAXAGESSR||fabs(t2)>MAXAGESSR) {
         trace(2,"age of ssr error: %s sat=%2d t=%.0f %.0f\n",time_str(time,0),
               sat,t1,t2);
         *svh=-1;
         return 0;
     }
+    /* ssr orbit and clock correction (ref [4]) */
     if (ssr->udi[0]>=1.0) t1-=ssr->udi[0]/2.0;
     if (ssr->udi[1]>=1.0) t2-=ssr->udi[0]/2.0;
     
@@ -676,7 +677,8 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
         return 0;
     }
     /* satellite postion and clock by broadcast ephemeris */
-    if (!ephpos(time,teph,sat,nav,ssr->iode,rs,dts,var,svh)) return 0;
+    if (!ephpos(time,teph,sat,nav,ssr->iode,rs,dts,var,svh))  /* ssr.iode=eph.iode theoretically */
+        return 0;
     
     /* satellite clock for gps, galileo and qzss */
     sys=satsys(sat,NULL);
@@ -701,10 +703,10 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     cross3(ea,ec,er);
     
     /* satellite antenna offset correction */
-    if (opt) {
+    if (opt) { /* CoM to APC */
         satantoff(time,rs,sat,nav,dant);
     }
-    for (i=0;i<3;i++) {
+    for (i=0;i<3;i++) {/* matrix multiplication */
         rs[i]+=-(er[i]*deph[0]+ea[i]*deph[1]+ec[i]*deph[2])+dant[i];
     }
     /* t_corr = t_sv - (dts(brdc) + dclk(ssr) / CLIGHT) (ref [10] eq.3.12-7) */

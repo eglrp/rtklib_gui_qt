@@ -525,9 +525,7 @@ static void udpos_ppp(rtk_t *rtk)
 
     /* kinmatic mode without dynamics */
     if (!rtk->opt.dynamics) {
-        for (i=0;i<3;i++) {
-            initx(rtk,rtk->sol.rr[i],VAR_POS,i);
-        }
+        for (i=0;i<3;i++) initx(rtk,rtk->sol.rr[i],VAR_POS,i);
         return;
     }
     /* kinmatic mode with dynamics */
@@ -540,8 +538,8 @@ static void udpos_ppp(rtk_t *rtk)
         free(ix);
         return;
     }
-    /* state transition of position/velocity/acceleration note that:
-     * elements of F are sorted in col order                            */
+    /* F=state transition matrix(pos/vel/accel); F is not transposed
+     * index of F is computed in col order, i.e. nx should intepreted as rowmax. */
     F=eye(nx); P=mat(nx,nx); FP=mat(nx,nx); x=mat(nx,1); xp=mat(nx,1);
     for (i=0;i<6;i++) {
         F[i+(i+3)*nx]=rtk->tt;
@@ -558,7 +556,7 @@ static void udpos_ppp(rtk_t *rtk)
         }
     }
 
-    /* x=F*x, P=F*P*F+Q */
+    /* x=F*x, P=F*P*F'+Q */
     /* 1) predict x=F*x */
     matmul("NN",nx, 1,nx,1.0, F,x,0.0,xp);
 
@@ -574,7 +572,7 @@ static void udpos_ppp(rtk_t *rtk)
             rtk->P[ix[i]+ix[j]*rtk->nx]=P[i+j*nx];
         }
     }
-    /* 2.2) predict P=FPF'+Q: process noise added to only var and co-var of acceleration
+    /* 2.2) predict P=FPF'+Q: process noise added only to var and co-var of acceleration
      * note that: Q[9] is acctually a submatrix of Q for acceleration parameters
      * and Q[9]=Q[3][3]                                                                  */
     Q[0]=Q[4]=SQR(rtk->opt.prn[3])*fabs(rtk->tt);   /* Q[0]:E, Q[4]:N   */
@@ -597,9 +595,7 @@ static void udclk_ppp(rtk_t *rtk)
     /* initialize every epoch for clock (white noise) */
     for (i=0;i<NSYS;i++) {
         if (rtk->opt.sateph==EPHOPT_PREC) {
-            /* time of prec ephemeris is based gpst */
-            /* negelect receiver inter-system bias  */
-            dtr=rtk->sol.dtr[0];
+            dtr=rtk->sol.dtr[0];/* [q]? */
         }
         else {
             dtr=i==0?rtk->sol.dtr[0]:rtk->sol.dtr[0]+rtk->sol.dtr[i];
@@ -629,7 +625,7 @@ static void udtrop_ppp(rtk_t *rtk)
         
         if (rtk->opt.tropopt>=TROPOPT_ESTG) {
             for (j=i+1;j<i+3;j++) {
-                rtk->P[j+j*rtk->nx]+=SQR(rtk->opt.prn[2]*0.1)*fabs(rtk->tt);
+                rtk->P[j+j*rtk->nx]+=SQR(rtk->opt.prn[2]*0.1)*fabs(rtk->tt); /* factor=0.1 */
             }
         }
     }
@@ -696,7 +692,7 @@ static void udbias_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     
     /* handle day-boundary clock jump */
     if (rtk->opt.posopt[5]) {
-        clk_jump=ROUND(time2gpst(obs[0].time,NULL)*10)%864000==0;
+        clk_jump=ROUND(time2gpst(obs[0].time,NULL)*10)%864000==0; /* factor=10 means precision is 0.1s */
     }
     for (i=0;i<MAXSAT;i++) for (j=0;j<rtk->opt.nf;j++) {
         rtk->ssat[i].slip[j]=0;

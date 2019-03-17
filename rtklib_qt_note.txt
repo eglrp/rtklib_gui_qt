@@ -1,0 +1,12 @@
+@postpos.c
+1.postpos(): tu 
+2.usage of expath() 
+3.postpos(): 'index' for filepaths after reppath()
+4.postpos(): 'flag' usage: for multi-session output
+
+@rtkcmn.c
+1.qsort(): interface _PtFuncCompare(e1, e2) return negetive value: e1 ahead of e2
+2.sortobs: time\rcv\sat ascending 
+3.cmpeph(),cmpeph()
+4.operator '? :'
+5.结合性、优先级

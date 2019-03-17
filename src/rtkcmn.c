@@ -2655,7 +2655,7 @@ extern void uniqnav(nav_t *nav)
         nav->lam[i][j]=satwavelen(i+1,j,nav);
     }
 }
-/* compare observation data -------------------------------------------------
+/* compare observation data: time<rcv#<sat# ---------------------------------
  * return: negetive value means p1 is sorted ahead of p2
  * ------------------------------------------------------------------------*/
 static int cmpobs(const void *p1, const void *p2)
@@ -2686,7 +2686,7 @@ extern int sortobs(obs_t *obs)
     for (i=j=0;i<obs->n;i++) {
         if (obs->data[i].sat!=obs->data[j].sat||
             obs->data[i].rcv!=obs->data[j].rcv||
-            timediff(obs->data[i].time,obs->data[j].time)!=0.0) {
+            timediff(obs->data[i].time,obs->data[j].time)!=0.0) { /* note: judge criterion is strictly '=' instead of 'DTTOL' */
             obs->data[++j]=obs->data[i]; /* index j for undeplicated data; delete by overwriting duplicated data */
         }
     }

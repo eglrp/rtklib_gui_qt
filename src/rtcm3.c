@@ -1265,7 +1265,11 @@ static int decode_type1042(rtcm_t *rtcm)
     rtcm->ephsat=sat;
     return 2;
 }
-/* decode ssr 1,4 message header ---------------------------------------------*/
+/* decode ssr 1,4 message header -----------------------------------------------
+ * args :   int     *snyc       O       multiple msg indicator,
+ *                                      0: last msg of a sequence,
+ *                                      1: not the last msg of a squence
+ * ---------------------------------------------------------------------------*/
 static int decode_ssr1_head(rtcm_t *rtcm, int sys, int *sync, int *iod,
                             double *udint, int *refd, int *hsize)
 {
@@ -1273,19 +1277,19 @@ static int decode_ssr1_head(rtcm_t *rtcm, int sys, int *sync, int *iod,
     char *msg,tstr[64];
     int i=24+12,nsat,udi,provid=0,solid=0,ns;
     
-    ns=sys==SYS_QZS?4:6;
+    ns=sys==SYS_QZS?4:6; /* bit number of 'No. of Satellites' */
     
-    if (i+(sys==SYS_GLO?53:50+ns)>rtcm->len*8) return -1;
+    if (i+(sys==SYS_GLO?53:50+ns)>rtcm->len*8) return -1; /* imcompleted head part of ssr message */
     
-    if (sys==SYS_GLO) {
+    if (sys==SYS_GLO) { /* GLONASS epoch time: time of day */
         tod=getbitu(rtcm->buff,i,17); i+=17;
         adjday_glot(rtcm,tod);
     }
-    else {
+    else {              /* other GNSS epoch time: time of week */
         tow=getbitu(rtcm->buff,i,20); i+=20;
         adjweek(rtcm,tow);
     }
-    udi   =getbitu(rtcm->buff,i, 4); i+= 4;
+    udi   =getbitu(rtcm->buff,i, 4); i+= 4; /* update interval */
     *sync =getbitu(rtcm->buff,i, 1); i+= 1;
     *refd =getbitu(rtcm->buff,i, 1); i+= 1; /* satellite ref datum */
     *iod  =getbitu(rtcm->buff,i, 4); i+= 4; /* iod */
@@ -1486,16 +1490,17 @@ static int decode_ssr3(rtcm_t *rtcm, int sys)
         case SYS_SBS: np=6; offp=120; codes=codes_sbs; ncode= 4; break;
         default: return sync?0:10;
     }
-    for (j=0;j<nsat&&i+5+np<=rtcm->len*8;j++) {
+    for (j=0;j<nsat&&i+5+np<=rtcm->len*8;j++) { /* for every sat */
         prn  =getbitu(rtcm->buff,i,np)+offp; i+=np;
         nbias=getbitu(rtcm->buff,i, 5);      i+= 5;
         
-        for (k=0;k<MAXCODE;k++) cbias[k]=0.0;
+        for (k=0;k<MAXCODE;k++) cbias[k]=0.0; /* delete old info */
+
         for (k=0;k<nbias&&i+19<=rtcm->len*8;k++) {
             mode=getbitu(rtcm->buff,i, 5);      i+= 5;
             bias=getbits(rtcm->buff,i,14)*0.01; i+=14;
             if (mode<=ncode) {
-                cbias[codes[mode]-1]=(float)bias;
+                cbias[codes[mode]-1]=(float)bias; /* assign cbias by code index */
             }
             else {
                 trace(2,"rtcm3 %d not supported mode: mode=%d\n",type,mode);
@@ -1513,17 +1518,18 @@ static int decode_ssr3(rtcm_t *rtcm, int sys)
             rtcm->ssr[sat-1].cbias[k]=(float)cbias[k];
         }
         rtcm->ssr[sat-1].update=1;
-    }
+    }/* for every sat */
     return sync?0:10;
 }
 /* decode ssr 4: combined orbit and clock corrections ------------------------*/
 static int decode_ssr4(rtcm_t *rtcm, int sys)
 {
     double udint,deph[3],ddeph[3],dclk[3];
-    int i,j,k,type,nsat,sync,iod,prn,sat,iode,iodcrc,refd=0,np,ni,nj,offp;
+    int i,j,k,type,nsat,sync,iod,prn,sat,iode,iodcrc,refd=0,np,ni,nj,offp; /* sync=multi msg indicator: 0=last msg, 1=not */
     
     type=getbitu(rtcm->buff,24,12);
     
+    /* rtcm.time will adjust with field 'epoch time' of message head */
     if ((nsat=decode_ssr1_head(rtcm,sys,&sync,&iod,&udint,&refd,&i))<0) {
         trace(2,"rtcm3 %d length error: len=%d\n",type,rtcm->len);
         return -1;
@@ -2239,7 +2245,7 @@ extern int decode_rtcm3(rtcm_t *rtcm)
         sprintf(rtcm->msgtype,"RTCM %4d (%4d):",type,rtcm->len);
     }
     /* real-time input option */
-    if (strstr(rtcm->opt,"-RT_INP")) {
+    if (strstr(rtcm->opt,"-RT_INP")) {/* set rtcm.time with pc time */
         tow=time2gpst(utc2gpst(timeget()),&week);
         rtcm->time=gpst2time(week,floor(tow));
     }

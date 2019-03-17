@@ -773,7 +773,7 @@ typedef struct {        /* DGPS/GNSS correction type */
     double udre;        /* UDRE */
 } dgps_t;
 
-typedef struct {        /* SSR correction type */
+typedef struct {        /* SSR correction type: for one sat */
     gtime_t t0[6];      /* epoch time (GPST) {eph,clk,hrclk,ura,bias,pbias} */
     double udi[6];      /* SSR update interval (s) */
     int iod[6];         /* iod ssr {eph,clk,hrclk,ura,bias,pbias} */
@@ -785,7 +785,7 @@ typedef struct {        /* SSR correction type */
     double ddeph[3];    /* dot delta orbit {radial,along,cross} (m/s) */
     double dclk [3];    /* delta clock {c0,c1,c2} (m,m/s,m/s^2) */
     double hrclk;       /* high-rate clock corection (m) */
-    float  cbias[MAXCODE]; /* code biases (m) */
+    float  cbias[MAXCODE]; /* code biases (m): its index is code type 'CODE_???' */
     double pbias[MAXCODE]; /* phase biases (m) */
     float  stdpb[MAXCODE]; /* std-dev of phase biases (m) */
     double yaw_ang,yaw_rate; /* yaw angle and yaw rate (deg,deg/s) */
@@ -1091,7 +1091,7 @@ typedef struct {        /* processing options type */
     int  initrst;       /* initialize by restart */
     int  outsingle;     /* output single by dgps/float/fix/ppp outage */
     char rnxopt[2][256]; /* rinex options {rover,base} */
-    int  posopt[6];     /* positioning options: see rtkpost option GUI, 0-5:{satPCV,recPCV,phWU,rejEcl,RAIM_FDE,BDCorr} */
+    int  posopt[6];     /* positioning options: see rtkpost option GUI, 0-5:{satPCV,recPCV,phWU,rejEcl,RAIM_FDE,BDCorr(see udbias_ppp()@ppp.c)} */
     int  syncsol;       /* solution sync mode (0:off,1:on) */
     double odisp[2][6*11]; /* ocean tide loading parameters {rov,base} */
     exterr_t exterr;    /* extended receiver error model */
@@ -1111,7 +1111,7 @@ typedef struct {        /* solution options type */
     int datum;          /* datum (0:WGS84,1:Tokyo) */
     int height;         /* height (0:ellipsoidal,1:geodetic) */
     int geoid;          /* geoid model (0:EGM96,1:JGD2000) */
-    int solstatic;      /* solution of static mode (0:all,1:single): in all static mode, output solotion of every epoch or just the last epoch */
+    int solstatic;      /* solution of static mode (0:all,1:single): in static mode, output solotion of every epoch or just the last epoch */
     int sstat;          /* solution statistics level (0:off,1:states,2:residuals) */
     int trace;          /* debug trace level (0:off,1-5:debug) */
     double nmeaintv[2]; /* nmea output interval (s) (<0:no,0:all) */

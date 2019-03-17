@@ -170,7 +170,7 @@ static void outheader(FILE *fp, char **file, int n, const prcopt_t *popt,
     
     outsolhead(fp,sopt);
 }
-/* search next observation data index ----------------------------------------
+/* search next observation data index: forward -------------------------------
  * retrun: n = number of next epoch.
  *         If n=0 means:
  *         1) do not have receiver id = rcv;
@@ -190,10 +190,13 @@ static int nextobsf(const obs_t *obs, int *i, int rcv)
     /* 2.get # of obs in next epoch */
     for (n=0;*i+n<obs->n;n++) {
         tt=timediff(obs->data[*i+n].time,obs->data[*i].time);
-        if (obs->data[*i+n].rcv!=rcv||tt>DTTOL) break;
+        if (obs->data[*i+n].rcv!=rcv||tt>DTTOL) break;/* three way to break: these two ways plus '*i+n<obs->n' */
     }
     return n;
 }
+/* search next observation data index: backward ------------------------------
+ * retrun: n = number of next epoch.
+ * -------------------------------------------------------------------------*/
 static int nextobsb(const obs_t *obs, int *i, int rcv)
 {
     double tt;
@@ -221,23 +224,25 @@ static void update_rtcm_ssr(gtime_t time)
         if (fp_rtcm) fclose(fp_rtcm);
         fp_rtcm=fopen(path,"rb");
         if (fp_rtcm) {
-            rtcm.time=time;
-            input_rtcm3f(&rtcm,fp_rtcm);/* first read */
+            rtcm.time=time;  /* init: rtcm struct time */
+            input_rtcm3f(&rtcm,fp_rtcm); /* first read */
             trace(2,"rtcm file open: %s\n",path);
         }
     }
     if (!fp_rtcm) return;
     
-    /* read rtcm file until current time */
-    while (timediff(rtcm.time,time)<1E-3) {
-        if (input_rtcm3f(&rtcm,fp_rtcm)<-1) break;
+    /* read rtcm file until current time, use 'input_rtcm3f()' to decode msg:
+     *     1) rtcm.time will be adjust by epoch time in msg;
+     *     2) rtcm.ssr[i].update will set 1                                          */
+    while (timediff(rtcm.time,time)<1E-3) { /* sync ssr and obs: all msg until the epoch of obs will be used */
+        if (input_rtcm3f(&rtcm,fp_rtcm)<-1) break; /* error message                  */
         
-        /* update ssr corrections */
+        /* sat-wise extract ssr data: rtcm.ssr(for decoding) -> navs.ssr(for processing) */
         for (i=0;i<MAXSAT;i++) {
             if (!rtcm.ssr[i].update||
                 rtcm.ssr[i].iod[0]!=rtcm.ssr[i].iod[1]||
-                timediff(time,rtcm.ssr[i].t0[0])<-1E-3) continue;
-            navs.ssr[i]=rtcm.ssr[i];
+                timediff(time,rtcm.ssr[i].t0[0])<-1E-3) /* if there ssr_time > obs_time, they will be skipped and processed at next epoch, because rtcm.time will set to its time */ continue;
+            navs.ssr[i]=rtcm.ssr[i]; /* extract */
             rtcm.ssr[i].update=0;
         }
     }
@@ -277,7 +282,7 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
         * assume having 'obss' like: {r1_t1, (lack r2_t1,) r1_t2, r2_t2, r1_t3, r2_t3, ...}
         * it will get obs {r1_t1, r2_t2}, where obs of ref is after of rov */
         nr=nextobsf(&obss,&iobsr,2); /* note that: pointer is 'iobsr' instead of 'i' */
-        if (nr<=0) { /* [q]???, if nr=0 means no obs of ref, so do it again still make nothing happened. */
+        if (nr<=0) {
             nr=nextobsf(&obss,&iobsr,2);
         }
         for (i=0;i<nu&&n<MAXOBS*2;i++) obs[n++]=obss.data[iobsu+i];
@@ -369,11 +374,11 @@ static void corr_phase_bias_ssr(obsd_t *obs, int n, const nav_t *nav)
         if (!(code=obs[i].code[j])) continue;
         if ((lam=nav->lam[obs[i].sat-1][j])==0.0) continue;
         
-        /* correct phase bias (cyc) */
+        /* correct phase bias (cyc) : need to see standard file;[bug] no time validation for pbias */
         obs[i].L[j]-=nav->ssr[obs[i].sat-1].pbias[code-1]/lam;
     }
 }
-/* process positioning -------------------------------------------------------
+/* process positioning :i.e. filtering ---------------------------------------
 * procedure: 
 *		1) inputobs(): get obs of every epoch 
 *		2) correct carrier-phase correction
@@ -419,7 +424,7 @@ static void procpos(FILE *fp, const prcopt_t *popt, const solopt_t *sopt,
             corr_phase_bias_fcb(obs,n,&navs);
         }
         else if (!strstr(popt->pppopt,"-DIS_FCB")) {
-            corr_phase_bias_ssr(obs,n,&navs);
+            corr_phase_bias_ssr(obs,n,&navs); /* to do */
         }
         /* disable L2 */
 #if 0
@@ -1081,12 +1086,12 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
         reppath(fopt->dcb,path,ts,"","");
         readdcb(path,&navs,stas);
     }
-    /* set antenna paramters */
+    /* set antenna paramters: read atx in postpos() */
     if (popt_.mode!=PMODE_SINGLE) {
         setpcv(obss.n>0?obss.data[0].time:timeget(),&popt_,&navs,&pcvss,&pcvsr,
                stas);
     }
-    /* read ocean tide loading parameters */
+    /* read ocean tide loading parameters: for solid/ocean/polt tide and sub-daily ERP variance correction */
     if (popt_.mode>PMODE_SINGLE&&*fopt->blq) {
         readotl(&popt_,fopt->blq,stas);
     }
@@ -1098,7 +1103,7 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
         }
     }
     else if (PMODE_DGPS<=popt_.mode&&popt_.mode<=PMODE_STATIC) { /*PMODE_DGPS, PMODE_KINEMA, PMODE_STATIC*/
-        if (!antpos(&popt_,2,&obss,&navs,stas,fopt->stapos)) { /* 1: base */
+        if (!antpos(&popt_,2,&obss,&navs,stas,fopt->stapos)) { /* 2: base */
             freeobsnav(&obss,&navs);
             return 0;
         }
@@ -1238,7 +1243,7 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     
     trace(3,"execses_b: n=%d outfile=%s\n",n,outfile);
     
-    /* read prec ephemeris and sbas data */
+    /* read prec ephemeris and sbas data, initialze rtcm control */
     readpreceph(infile,n,popt,&navs,&sbss,&lexs);
     
     /* find whether input filepath contains keyword */
@@ -1336,7 +1341,11 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 *          each session, you should use time-relevant keywords.
 *
 *          8) rtcm3 file only support %r %b keywords, do not support time-relevant keywords.
-*-----------------------------------------------------------------------------*/
+*
+*          9) understanding for the main idea of this function: 'unit-wise processing' and 'keywords replacing'
+*          are two independent mechanisms. 'unit-wise processing' is for data processing while 'keywords replacing'
+*          for filepath processing. For the latter, please ensure the exsitence of these filepaths with keywords replaced.
+* -----------------------------------------------------------------------------*/
 extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                    const prcopt_t *popt, const solopt_t *sopt,
                    const filopt_t *fopt, char **infile, int n, char *outfile,
@@ -1352,8 +1361,9 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
     /* open processing session. one session=all units. read: atx\geoid files */
     if (!openses(popt,sopt,fopt,&navs,&pcvss,&pcvsr)) return -1;
     
+    /* MODE1: unit-wise('unit': session, segment or arc) data processing */
     if (ts.time!=0&&te.time!=0&&
-            tu>=0.0) {/* unit-wise data processing: tu only can be enabled (at GUI) when both ts&te>0  */
+            tu>=0.0) {/* tu only can be enabled (at GUI) when both ts&te>0  */
         if (timediff(te,ts)<0.0) {
             showmsg("error : no period");
             closeses(&navs,&pcvss,&pcvsr);
@@ -1366,17 +1376,19 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                 return -1;
             }
         }
+        /* 1. compute tunit and  {ts,te} for each unit */
         if (tu==0.0||tu>86400.0*MAXPRCDAYS) tu=86400.0*MAXPRCDAYS;
         settspan(ts,te);
-        tunit=tu<86400.0?tu:86400.0; /* tunit <= 1day. unit: processing unit, i.e. one segment or arc */
+        tunit=tu<86400.0?tu:86400.0; /* tunit <= 1day */
         tss=tunit*(int)floor(time2gpst(ts,&week)/tunit); /* start time of one unit */
         
-        for (i=0;;i++) { /* for each unit */
+        /* 2. unit-wise processing: tts/tte will *change* and be replaced for time-keywords in every unit */
+        for (i=0;;i++) { /* ts/te: time start/end for the whole data; tts/tte: for every unit */
             tts=gpst2time(week,tss+i*tu);
-            tte=timeadd(tts,tu-DTTOL); /* get end time of one unit */
+            tte=timeadd(tts,tu-DTTOL);
             if (timediff(tts,te)>0.0) break;  /* only hit after first loop: all data processed */
-            if (timediff(tts,ts)<0.0) tts=ts; /* trim unit start time */
-            if (timediff(tte,te)>0.0) tte=te; /* trim unit end time */
+            if (timediff(tts,ts)<0.0) tts=ts;
+            if (timediff(tte,te)>0.0) tte=te;
             
             strcpy(proc_rov ,""); strcpy(proc_base,""); /* clear static variables for each session */
 
@@ -1385,12 +1397,13 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                 break;
             }
 
-            for (j=k=nf=0;j<n;j++) {/* n: # of input files */
-                
+            /* 2.1 replace time-keywords in input filepaths */
+            for (j=k=nf=0;j<n;j++) { /* n: # of input files; j: index in raw input files; k: index in keywords replaced input files */
                 ext=strrchr(infile[j],'.');
                 
-                if (ext&&(!strcmp(ext,".rtcm3")||!strcmp(ext,".RTCM3"))) {/* rtcm3 files */
-                    strcpy(ifile[nf++],infile[j]); /* add rtcm3 files to 'ifile'; note rtcm file do not reppath */
+                /* rtcm file replace time-keywords in update_rtcm_ssr(), not here */
+                if (ext&&(!strcmp(ext,".rtcm3")||!strcmp(ext,".RTCM3"))) {
+                    strcpy(ifile[nf++],infile[j]);
                 }
                 else {
                     /* include next day precise ephemeris or rinex brdc nav */
@@ -1402,13 +1415,15 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                     else if (strstr(infile[j],"brdc")) {
                         ttte=timeadd(ttte,7200.0);
                     }
+                    /* replace keywords for input files in this unit
+                     * {'infile': raw filepaths; 'ifile': keywords replaced filepaths} */
                     nf+=reppaths(infile[j],ifile+nf,MAXINFILE-nf,tts,ttte,"","");
                 }
 
-                /* 1) due to one obs may divide into sevral parts for multi-session process
-                 * i.e. one file may used into different session processing, so need file index for every session
-                 * 2) 'infile': actually input filepaths;
-                 *     'ifile': filepaths after dividing for multi-session processing */
+                /* 2.2 get index for raw input files:
+                 * case filepaths with keywords    : {f1,f2}-->{f1_1,f1_2,f2_1,f2_2}
+                 * case filepaths without keywords : {f1,f2}-->{f1,f2}
+                 * no matter filepaths with/without keywords, index can used to ditinguish rov and ref */
                 while (k<nf) index[k++]=j;
                 
                 if (nf>=MAXINFILE) {
@@ -1416,21 +1431,22 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                     break;
                 }
             }
-            if (!reppath(outfile,ofile,tts,"","")&& /* no valid keyword to be replaced in output file */
-                    i>0)                            /* after first session */
+
+            /* 2.3 replace time-keywords in input filepaths */
+            if (!reppath(outfile,ofile,tts,"","")&&i>0) /* no keyword replaced in output file & after first session */
                 /* see note 7)
                  * flag=0: will not create pos/trace/stat output file after the first session
                  * flag=1: create these output file for every session */
                 flag=0;
             
             /* execute processing session */
-            stat=execses_b(tts,tte,ti,popt,sopt,fopt,flag,ifile,index,nf,ofile,
-                           rov,base);
+            stat=execses_b(tts,tte,ti,popt,sopt,fopt,flag,ifile,index,nf,ofile,rov,base);
             
             if (stat==1) break;
         }
         for (i=0;i<MAXINFILE;i++) free(ifile[i]);
     }
+    /* MODE2: one unit data processing with a given start time */
     else if (ts.time!=0) {
         for (i=0;i<n&&i<MAXINFILE;i++) {
             if (!(ifile[i]=(char *)malloc(1024))) {
@@ -1443,17 +1459,16 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
         reppath(outfile,ofile,ts,"","");
         
         /* execute processing session */
-        stat=execses_b(ts,te,ti,popt,sopt,fopt,1,ifile,index,n,ofile,rov,
-                       base);
+        stat=execses_b(ts,te,ti,popt,sopt,fopt,1,ifile,index,n,ofile,rov,base);
         
         for (i=0;i<n&&i<MAXINFILE;i++) free(ifile[i]);
     }
+    /* MODE3: one unit data processing (default) */
     else {
         for (i=0;i<n;i++) index[i]=i;
         
         /* execute processing session */
-        stat=execses_b(ts,te,ti,popt,sopt,fopt,1,infile,index,n,outfile,rov,
-                       base);
+        stat=execses_b(ts,te,ti,popt,sopt,fopt,1,infile,index,n,outfile,rov,base);
     }
     /* close processing session */
     closeses(&navs,&pcvss,&pcvsr);

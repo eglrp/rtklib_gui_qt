@@ -90,20 +90,20 @@ static double prange(const obsd_t *obs, const nav_t *nav, const double *azel,
         }
 
         if (opt->ionoopt==IONOOPT_IFLC) {
-            /* note that: snr test is independent between freq and LC use both freq obs, so both freq need test */
+            /* snr is independent for every freq; LC use two freq obs, so two freq need test */
             if (testsnr(0,j,azel[1],obs->SNR[j]*0.25,&opt->snrmask)) return 0.0;
         }
     }
 
     gamma=SQR(lam[j])/SQR(lam[i]); /* f1^2/f2^2 */
     P1=obs->P[i];
-    P2=obs->P[j];
+    P2=obs->P[j]; /* to do: get p1,p2 code type, add ssr cbias correction, var set 0 and then use 'ura' */
     P1_P2=nav->cbias[obs->sat-1][0];
     P1_C1=nav->cbias[obs->sat-1][1];
     P2_C2=nav->cbias[obs->sat-1][2];
     
     /* if no P1-P2 DCB, use TGD instead */
-    if (P1_P2==0.0 && (sys&(SYS_GPS|SYS_GAL|SYS_QZS))) {
+    if (P1_P2==0.0 && (sys&(SYS_GPS|SYS_GAL|SYS_QZS))) { /* to do: basic freq of BDS tgd is different */
         P1_P2=(1.0-gamma)*gettgd(obs->sat,nav);
     }
 
@@ -113,10 +113,10 @@ static double prange(const obsd_t *obs, const nav_t *nav, const double *azel,
         if (obs->code[i]==CODE_L1C) P1+=P1_C1; /* C1->P1 */
         if (obs->code[j]==CODE_L2C) P2+=P2_C2; /* C2->P2 */
         
-        /* iono-free combination: elegancy */
+        /* iono-free combination */
         PC=(gamma*P1-P2)/(gamma-1.0);
     }
-    else { /* single-frequency: obs with non-IONOOPT_IFLC options are all regarded as single-freq, and only use P1 */
+    else { /* single-frequency: non-IONOOPT_IFLC obs is regarded as single-freq; only P1 is used */
         if (P1==0.0) return 0.0;
         if (obs->code[i]==CODE_L1C) P1+=P1_C1; /* C1->P1 */
         PC=P1-P1_P2/(1.0-gamma); /* P1_p2=-(d^s_1-d^s_2), dt^s_IF=dt^s+alpha*d^s_1+beta*d^s_2 */
@@ -238,7 +238,7 @@ static int  rescode(int iter, const obsd_t *obs, int n, const double *rs,
     int i,j,nv=0,sys,mask[4]={0};
     
     trace(3,"resprng : n=%d\n",n);
-    
+    /* 0.result of last iteration; x[i]='result of last epoch' when iter=0 */
     for (i=0;i<3;i++) rr[i]=x[i];
     dtr=x[3]; /* dtr_g */
     
@@ -253,7 +253,8 @@ static int  rescode(int iter, const obsd_t *obs, int n, const double *rs,
         /* 1.reject duplicated observation data */
         if (i<n-1 && i<MAXOBS-1 && obs[i].sat==obs[i+1].sat) {
             trace(2,"duplicated observation data %s sat=%2d\n", time_str(obs[i].time,3),obs[i].sat);
-            i++; /* [q]skip both of the duplicated obs instead of one of them? */
+            /* duplicated obs have been deleted in sortobs()@rtkcmn.c, if there are still exist, they are untrustworthy. */
+            i++;
             continue;
         }
 
@@ -275,9 +276,9 @@ static int  rescode(int iter, const obsd_t *obs, int n, const double *rs,
                       iter>0?opt->ionoopt:IONOOPT_BRDC,&dion,&vion)) continue;
         
         /* 5.2 GPS-L1 -> L1/B1 ---------------------------------------------------
-         * note that:
-         * 1) dion is based on GPS_L1, actually dion is related to freq rather than sys
-         * 2) multiply 'dion' with factor to convert it to other frequency,like B1,R1,L2,L5,...
+         * 1) dion correction model of rtklib is based on GPS_L1;
+         * 2) different sys' first freqs are different;
+         * 3) dion depends on freq, so need conversion like L1->B1
          * ----------------------------------------------------------------------*/
         if ((lam_L1=nav->lam[obs[i].sat-1][0])>0.0) {
             dion*=SQR(lam_L1/lam_carr[0]); /* convert */
@@ -383,7 +384,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     
     v=mat(n+4,1); H=mat(NX,n+4); var=mat(n+4,1);
     
-    for (i=0;i<3;i++) x[i]=sol->rr[i];
+    for (i=0;i<3;i++) x[i]=sol->rr[i]; /* res of last epoch; x[i]=0 in epoch(0) */
     
     for (i=0;i<MAXITR;i++) { /* in the first iteration, rr={0,0,0,0,0,0}  */
         /* pseudorange residuals */
@@ -407,7 +408,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
         }
         for (j=0;j<NX;j++) x[j]+=dx[j];
         
-        if (norm(dx,NX)<1E-4) {
+        if (norm(dx,NX)<1E-4) { /* end of iteration */
             sol->type=0; /* 0: xyz, 1: enu */
             sol->time=timeadd(obs[0].time,-x[3]/CLIGHT); /* x[3] is error while -x[3] is correction */
             sol->dtr[0]=x[3]/CLIGHT; /* receiver clock bias (s) */

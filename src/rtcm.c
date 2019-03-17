@@ -266,6 +266,7 @@ extern int input_rtcm2(rtcm_t *rtcm, unsigned char data)
 *-----------------------------------------------------------------------------*/
 extern int input_rtcm3(rtcm_t *rtcm, unsigned char data)
 {
+    int ret;
     trace(5,"input_rtcm3: data=%02x\n",data);
     
     /* synchronize frame */
@@ -288,7 +289,8 @@ extern int input_rtcm3(rtcm_t *rtcm, unsigned char data)
         return 0;
     }
     /* decode rtcm3 message */
-    return decode_rtcm3(rtcm);
+    ret=decode_rtcm3(rtcm);
+    return ret;
 }
 /* input rtcm 2 message from file ----------------------------------------------
 * fetch next rtcm 2 message and input a messsage from file
@@ -324,7 +326,8 @@ extern int input_rtcm3f(rtcm_t *rtcm, FILE *fp)
     
     for (i=0;i<4096;i++) {
         if ((data=fgetc(fp))==EOF) return -2;
-        if ((ret=input_rtcm3(rtcm,(unsigned char)data))) return ret;
+        if ((ret=input_rtcm3(rtcm,(unsigned char)data)))
+            return ret;
     }
     return 0; /* return at every 4k bytes */
 }
